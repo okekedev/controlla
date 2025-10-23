@@ -119,6 +119,21 @@ struct PaywallView: View {
 
                 Spacer()
 
+                // Privacy and Terms links
+                HStack(spacing: 20) {
+                    Link("Privacy Policy", destination: URL(string: "https://sundai.us/controlla/privacy")!)
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
+
+                    Text("•")
+                        .foregroundColor(.white.opacity(0.4))
+
+                    Link("Terms of Use", destination: URL(string: "https://sundai.us/controlla/terms")!)
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+                .padding(.bottom, 8)
+
                 // Close button (for free users who want to use joystick only)
                 Button(action: {
                     dismiss()
