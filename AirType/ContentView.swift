@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var textInput = ""
     @State private var selectedDevice: DiscoveredDevice?
     @State private var showPaywall = false
+    @State private var hasShownInitialPaywall = false
 
     enum Mode: String, CaseIterable {
         case control = "Control"
@@ -92,6 +93,16 @@ struct ContentView: View {
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
                     .environmentObject(storeManager)
+            }
+            .onAppear {
+                // Show paywall on launch for free users (once per session)
+                if !storeManager.isPro && !hasShownInitialPaywall {
+                    // Small delay so the UI loads first
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showPaywall = true
+                        hasShownInitialPaywall = true
+                    }
+                }
             }
         }
     }
