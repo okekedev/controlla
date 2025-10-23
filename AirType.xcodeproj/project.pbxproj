@@ -13,6 +13,8 @@
 		A1000006000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000006000000000000001 /* Assets.xcassets */; };
 		AA8D43CE2EA9837F001C1FB5 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43CD2EA9837F001C1FB5 /* NetworkManager.swift */; };
 		AA8D43D02EA98614001C1FB5 /* InputSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43CF2EA98614001C1FB5 /* InputSimulator.swift */; };
+		AA8D43D22EAAB2BD001C1FB5 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43D12EAAB2BD001C1FB5 /* StoreManager.swift */; };
+		AA8D43D42EAAB2C7001C1FB5 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8D43D32EAAB2C7001C1FB5 /* PaywallView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +26,8 @@
 		A3000001000000000000001 /* AirType.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AirType.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA8D43CD2EA9837F001C1FB5 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		AA8D43CF2EA98614001C1FB5 /* InputSimulator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputSimulator.swift; sourceTree = "<group>"; };
+		AA8D43D12EAAB2BD001C1FB5 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
+		AA8D43D32EAAB2C7001C1FB5 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +59,8 @@
 				A2000007000000000000001 /* Info.plist */,
 				AA8D43CD2EA9837F001C1FB5 /* NetworkManager.swift */,
 				AA8D43CF2EA98614001C1FB5 /* InputSimulator.swift */,
+				AA8D43D12EAAB2BD001C1FB5 /* StoreManager.swift */,
+				AA8D43D32EAAB2C7001C1FB5 /* PaywallView.swift */,
 			);
 			path = AirType;
 			sourceTree = "<group>";
@@ -136,9 +142,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA8D43D42EAAB2C7001C1FB5 /* PaywallView.swift in Sources */,
 				AA8D43CE2EA9837F001C1FB5 /* NetworkManager.swift in Sources */,
 				A1000002000000000000001 /* ContentView.swift in Sources */,
 				A1000004000000000000001 /* HIDKeycodeMapper.swift in Sources */,
+				AA8D43D22EAAB2BD001C1FB5 /* StoreManager.swift in Sources */,
 				A1000001000000000000001 /* AirTypeApp.swift in Sources */,
 				AA8D43D02EA98614001C1FB5 /* InputSimulator.swift in Sources */,
 			);

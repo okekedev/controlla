@@ -14,8 +14,8 @@ Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your 
 
 ## Monetization (Freemium)
 
-- **Free**: Virtual joystick mouse control
-- **Pro ($0.99/month)**: Text input + Keyboard actions + Mouse clicks
+- **Free**: Virtual joystick + Mouse clicks (L/R buttons) - Full mouse control
+- **Pro ($0.99/month)**: Text input + Keyboard actions (Enter, Backspace, Space)
 - **7-day free trial** of Pro features
 - **Family Sharing** supported
 

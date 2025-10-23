@@ -9,9 +9,11 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var networkManager = NetworkManager()
+    @EnvironmentObject var storeManager: StoreManager
     @State private var selectedMode: Mode = .control
     @State private var textInput = ""
     @State private var selectedDevice: DiscoveredDevice?
+    @State private var showPaywall = false
 
     enum Mode: String, CaseIterable {
         case control = "Control"
@@ -63,7 +65,8 @@ struct ContentView: View {
                             ControlModeView(
                                 networkManager: networkManager,
                                 selectedDevice: selectedDevice,
-                                textInput: $textInput
+                                textInput: $textInput,
+                                showPaywall: $showPaywall
                             )
                         case .devices:
                             DevicePickerView(
@@ -85,6 +88,10 @@ struct ContentView: View {
             }
             .safeAreaInset(edge: .top) {
                 Color.clear.frame(height: 0)
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(storeManager)
             }
         }
     }
@@ -323,8 +330,10 @@ struct ModeButton: View {
 // MARK: - Control Mode View (Keyboard + Mouse)
 struct ControlModeView: View {
     @ObservedObject var networkManager: NetworkManager
+    @EnvironmentObject var storeManager: StoreManager
     let selectedDevice: DiscoveredDevice?
     @Binding var textInput: String
+    @Binding var showPaywall: Bool
     @State private var joystickOffset = CGSize.zero
     @FocusState private var isTextEditorFocused: Bool
 
@@ -380,6 +389,10 @@ struct ControlModeView: View {
             // Quick Keys: Enter, Backspace, Space
             HStack(spacing: 12) {
                 Button(action: {
+                    guard storeManager.isPro else {
+                        showPaywall = true
+                        return
+                    }
                     if let device = selectedDevice {
                         networkManager.sendKeyPress(keycode: 0x28, modifier: 0, to: device) // Enter
                     }
@@ -397,6 +410,10 @@ struct ControlModeView: View {
                 .opacity(selectedDevice == nil ? 0.5 : 1.0)
 
                 Button(action: {
+                    guard storeManager.isPro else {
+                        showPaywall = true
+                        return
+                    }
                     if let device = selectedDevice {
                         networkManager.sendKeyPress(keycode: 0x2A, modifier: 0, to: device) // Backspace
                     }
@@ -414,6 +431,10 @@ struct ControlModeView: View {
                 .opacity(selectedDevice == nil ? 0.5 : 1.0)
 
                 Button(action: {
+                    guard storeManager.isPro else {
+                        showPaywall = true
+                        return
+                    }
                     if let device = selectedDevice {
                         networkManager.sendKeyPress(keycode: 0x2C, modifier: 0, to: device) // Space
                     }
@@ -520,6 +541,12 @@ struct ControlModeView: View {
 
     private func sendText() {
         guard !textInput.isEmpty, let device = selectedDevice else { return }
+
+        // Check Pro status
+        guard storeManager.isPro else {
+            showPaywall = true
+            return
+        }
 
         // Dismiss keyboard
         isTextEditorFocused = false
