@@ -2,15 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>Controlla</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>AirType needs microphone access to convert your speech to text on your connected device.</string>
+	<string>Controlla needs microphone access to convert your speech to text on your connected device.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>AirType uses speech recognition to type what you say on your connected device.</string>
+	<string>Controlla uses speech recognition to type what you say on your connected device.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>AirType needs local network access to discover and connect to nearby devices on your WiFi network.</string>
+	<string>Controlla needs local network access to discover and connect to nearby devices on your WiFi network.</string>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_airtype._tcp</string>
+		<string>_controlla._tcp</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

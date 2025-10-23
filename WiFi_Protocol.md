@@ -1,8 +1,8 @@
-# AirType WiFi Protocol
+# Controlla WiFi Protocol
 
 ## Discovery (Bonjour)
 
-**Service Type:** `_airtype._tcp.local.`
+**Service Type:** `_controlla._tcp.local.`
 **Port:** 8080
 **Name:** Computer name (e.g., "Christian's MacBook Pro")
 

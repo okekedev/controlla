@@ -63,7 +63,7 @@ class NetworkManager: NSObject, ObservableObject {
     // MARK: - Bonjour Properties
     private var browser: NWBrowser?
     private var listener: NWListener?
-    private let serviceType = "_airtype._tcp"
+    private let serviceType = "_controlla._tcp"
 
     // MARK: - HTTP Server
     private var connectionsByID: [Int: NWConnection] = [:]
