@@ -108,7 +108,20 @@ The Mac receiver requires Accessibility permissions to simulate keyboard and mou
 
 ## License
 
-Proprietary - All rights reserved
+**Source Available - Commercial Software**
+
+This source code is publicly available for transparency and educational purposes.
+See [LICENSE](LICENSE) for details.
+
+**TL;DR:**
+- ✅ View, study, and learn from the code
+- ✅ Report bugs and contribute improvements
+- ✅ Use for educational purposes
+- ❌ Commercial use or redistribution
+- ❌ Publishing competing apps
+- ❌ Using the "Controlla" trademark
+
+For commercial licensing inquiries, contact: https://sundai.us
 
 ## Support
 
