@@ -450,6 +450,8 @@ struct ControlModeView: View {
                         .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
+                .disabled(selectedDevice == nil)
+                .opacity(selectedDevice == nil ? 0.5 : 1.0)
             }
             .padding(.horizontal, 25)
             .padding(.top, 12)
