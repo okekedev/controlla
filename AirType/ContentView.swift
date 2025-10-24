@@ -20,7 +20,6 @@ struct ContentView: View {
     enum Mode: String, CaseIterable {
         case control = "Control"
         case devices = "Devices"
-        case appMode = "App Mode"
     }
 
     var body: some View {
@@ -37,56 +36,40 @@ struct ContentView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Mode Switcher - only show if in Controller mode
-                if networkManager.appMode == .controller {
-                    Picker("Mode", selection: $selectedMode) {
-                        ForEach(Mode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(SegmentedPickerStyle())
-                    #if os(macOS)
-                    .controlSize(.large)
-                    #endif
-                    .background(Color.white.opacity(0.2))
-                    .cornerRadius(10)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-                    .padding(.bottom, 25)
-                }
+                #if targetEnvironment(macCatalyst) || os(macOS)
+                // Mac/Catalyst: Receiver mode only
+                ReceiverView(networkManager: networkManager)
 
-                // Mode Content
-                Group {
-                    if networkManager.appMode == .receiver {
-                        // Receiver mode - only show App Mode settings
-                        AppModeView(networkManager: networkManager)
-                    } else {
-                        // Controller mode - show all tabs
-                        switch selectedMode {
-                        case .control:
-                            ControlModeView(
-                                networkManager: networkManager,
-                                selectedDevice: selectedDevice,
-                                textInput: $textInput,
-                                showPaywall: $showPaywall
-                            )
-                        case .devices:
-                            DevicePickerView(
-                                networkManager: networkManager,
-                                selectedDevice: $selectedDevice
-                            )
-                        case .appMode:
-                            AppModeView(networkManager: networkManager)
-                        }
+                #else
+                // iOS/iPadOS: Controller mode with tabs
+                Picker("Mode", selection: $selectedMode) {
+                    ForEach(Mode.allCases, id: \.self) { mode in
+                        Text(mode.rawValue).tag(mode)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: networkManager.appMode) { newMode in
-                    // Auto-switch to App Mode tab when switching to Receiver
-                    if newMode == .receiver {
-                        selectedMode = .appMode
-                    }
+                .pickerStyle(SegmentedPickerStyle())
+                .background(Color.white.opacity(0.2))
+                .cornerRadius(10)
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+                .padding(.bottom, 25)
+
+                // Controller tabs
+                switch selectedMode {
+                case .control:
+                    ControlModeView(
+                        networkManager: networkManager,
+                        selectedDevice: selectedDevice,
+                        textInput: $textInput,
+                        showPaywall: $showPaywall
+                    )
+                case .devices:
+                    DevicePickerView(
+                        networkManager: networkManager,
+                        selectedDevice: $selectedDevice
+                    )
                 }
+                #endif
             }
             .safeAreaInset(edge: .top) {
                 Color.clear.frame(height: 0)
@@ -253,100 +236,80 @@ struct DeviceCard: View {
     }
 }
 
-// MARK: - App Mode View
-struct AppModeView: View {
+// MARK: - Receiver View (Mac/Catalyst only)
+struct ReceiverView: View {
     @ObservedObject var networkManager: NetworkManager
 
     var body: some View {
-        VStack(spacing: 25) {
-            VStack(alignment: .leading, spacing: 15) {
-                ForEach([AppMode.controller, AppMode.receiver], id: \.self) { mode in
-                    ModeButton(
-                        mode: mode,
-                        isSelected: networkManager.appMode == mode,
-                        onTap: {
-                            networkManager.appMode = mode
-                        }
-                    )
+        VStack(spacing: 40) {
+            Spacer()
+
+            // Receiver icon
+            Image(systemName: "desktopcomputer")
+                .font(.system(size: 80))
+                .foregroundColor(.white.opacity(0.9))
+
+            // Status
+            VStack(spacing: 15) {
+                Text("Receiver Mode")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text(networkManager.receiverStatus)
+                    .font(.title3)
+                    .foregroundColor(.white.opacity(0.9))
+
+                if networkManager.isControllerConnected {
+                    HStack {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 14, height: 14)
+                        Text("Controller Connected")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
+                    .padding(.top, 10)
+                } else if networkManager.isReceiving {
+                    HStack {
+                        Circle()
+                            .fill(Color.yellow)
+                            .frame(width: 14, height: 14)
+                        Text("Waiting for Connection")
+                            .foregroundColor(.white.opacity(0.8))
+                            .font(.subheadline)
+                    }
+                    .padding(.top, 10)
                 }
+            }
+
+            // Instructions
+            VStack(alignment: .leading, spacing: 12) {
+                InstructionText(text: "1. Open Controlla on your iPhone or iPad")
+                InstructionText(text: "2. Tap the Devices tab")
+                InstructionText(text: "3. Select this Mac to start controlling")
             }
             .padding(.horizontal, 40)
-            .padding(.top, 40)
-
-            // Connection Status for Receiver Mode
-            if networkManager.appMode == .receiver && networkManager.isReceiving {
-                VStack(spacing: 15) {
-                    if networkManager.isControllerConnected {
-                        HStack(spacing: 12) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.green)
-                            Text("Controller Connected")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
-                        }
-                    } else {
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(1.5)
-                                .padding(.bottom, 8)
-
-                            Text("Download app on iPhone then connect")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.white)
-
-                            Text("* You must be on the same WiFi")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                    }
-                }
-                .padding(.top, 30)
-            }
+            .padding(.vertical, 25)
+            .background(Color.white.opacity(0.15))
+            .cornerRadius(15)
+            .padding(.horizontal, 30)
 
             Spacer()
         }
+        .padding(.top, 40)
     }
 }
 
-// MARK: - Mode Button
-struct ModeButton: View {
-    let mode: AppMode
-    let isSelected: Bool
-    let onTap: () -> Void
+struct InstructionText: View {
+    let text: String
 
     var body: some View {
-        Button(action: onTap) {
-            HStack {
-                Image(systemName: iconName)
-                    .font(.system(size: 20))
-                Text(mode.rawValue)
-                    .font(.system(size: 16, weight: .medium))
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.white)
-                }
-            }
-            .foregroundColor(.white)
-            .padding()
-            .background(
-                isSelected
-                    ? Color.white.opacity(0.3)
-                    : Color.white.opacity(0.15)
-            )
-            .cornerRadius(12)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var iconName: String {
-        switch mode {
-        case .controller:
-            return "hand.point.left.fill"
-        case .receiver:
-            return "antenna.radiowaves.left.and.right"
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(.white.opacity(0.8))
+            Text(text)
+                .foregroundColor(.white.opacity(0.9))
+                .font(.subheadline)
         }
     }
 }
