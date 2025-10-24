@@ -48,5 +48,5 @@ Controlla Pro: $0.99/month
 • Auto-renews unless cancelled 24 hours before period ends
 • Manage in Settings → [Your Name] → Subscriptions
 
-Privacy Policy: https://sundai.us/controlla/privacy
-Terms of Use: https://sundai.us/controlla/terms
+Privacy Policy: https://okekedev.github.io/controlla/privacy.html
+Terms of Use: https://okekedev.github.io/controlla/terms.html

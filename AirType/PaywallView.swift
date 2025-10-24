@@ -121,14 +121,14 @@ struct PaywallView: View {
 
                 // Privacy and Terms links
                 HStack(spacing: 20) {
-                    Link("Privacy Policy", destination: URL(string: "https://sundai.us/controlla/privacy")!)
+                    Link("Privacy Policy", destination: URL(string: "https://okekedev.github.io/controlla/privacy.html")!)
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
 
                     Text("•")
                         .foregroundColor(.white.opacity(0.4))
 
-                    Link("Terms of Use", destination: URL(string: "https://sundai.us/controlla/terms")!)
+                    Link("Terms of Use", destination: URL(string: "https://okekedev.github.io/controlla/terms.html")!)
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
                 }
