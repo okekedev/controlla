@@ -7,8 +7,8 @@ KEY_FILE = "fastlane/AuthKey_3M7GV93JWG.p8"
 
 # App Configuration
 BUNDLE_ID = "com.christianokeke.Controlla"
-APP_NAME = "Controlla"
-SKU = "controlla-2025"
+APP_NAME = "Controlla for Mac"
+SKU = "controlla"
 TEAM_ID = "TUG3BHLSM4"
 
 # API Base URL
