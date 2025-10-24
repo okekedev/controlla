@@ -28,6 +28,14 @@ struct PaywallView: View {
             VStack(spacing: 30) {
                 Spacer()
 
+                // Logo
+                Image("Controlla")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(20)
+                    .shadow(radius: 10)
+
                 // Title
                 VStack(spacing: 12) {
                     Text("Unlock Pro Features")

@@ -81,6 +81,7 @@ fastlane/report.xml
 fastlane/Preview.html
 # fastlane/screenshots/**/*.png  # Commented out - keeping manual screenshots in git
 fastlane/test_output
+fastlane/AuthKey_*.p8
 
 # Code Injection
 #
@@ -91,3 +92,6 @@ iOSInjectionProject/
 
 # macOS
 .DS_Store
+
+# Environment variables with secrets
+.env

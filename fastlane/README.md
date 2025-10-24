@@ -1,148 +1,88 @@
-# Controlla - Fastlane Automation
+fastlane documentation
+----
 
-Automated App Store submission for Controlla.
+# Installation
 
-## Prerequisites
+Make sure you have the latest version of the Xcode command line tools installed:
 
-1. **Apple Developer Account** (paid)
-2. **App Store Connect access**
-3. **Your credentials:**
-   - Apple ID
-   - Team ID (find at: https://developer.apple.com/account)
-
-## Setup
-
-### 1. Configure Your Apple ID
-
-Set environment variables (recommended):
-
-```bash
-export APPLE_ID="your-apple-id@example.com"
-export TEAM_ID="YOUR_TEAM_ID"
+```sh
+xcode-select --install
 ```
 
-Or edit `Appfile` directly.
+For _fastlane_ installation instructions, see [Installing _fastlane_](https://docs.fastlane.tools/#installing-fastlane)
 
-### 2. First-Time Setup
+# Available Actions
 
-Create the app in App Store Connect:
+## iOS
 
-```bash
-fastlane setup
+### ios release
+
+```sh
+[bundle exec] fastlane ios release
 ```
 
-This will:
-- Create the app listing
-- Upload metadata
-- Show subscription configuration instructions
+Build and upload to App Store
 
-### 3. Configure Subscription
+### ios setup
 
-Go to App Store Connect and configure:
-- **Product ID:** `com.controlla.pro.monthly`
-- **Subscription Group:** Controlla Pro
-- **Price:** $0.99/month (Tier 1)
-- **Free Trial:** 7 days
-- **Family Sharing:** Enabled
-
-Link: https://appstoreconnect.apple.com
-
-## Usage
-
-### Full Release
-
-Build and upload to App Store:
-
-```bash
-fastlane release
+```sh
+[bundle exec] fastlane ios setup
 ```
 
-You'll be prompted for:
-- Version number (e.g., 1.0.0)
-- Build number (e.g., 1)
+First-time setup
 
-### Beta Release
+### ios build
 
-Upload to TestFlight:
-
-```bash
-fastlane beta
+```sh
+[bundle exec] fastlane ios build
 ```
 
-### Build Only
+Build the app
 
-Just build the IPA:
+### ios upload_metadata
 
-```bash
-fastlane build
+```sh
+[bundle exec] fastlane ios upload_metadata
 ```
 
-### Upload Metadata Only
+Upload metadata
 
-Update app description, keywords, etc:
+### ios upload_to_app_store
 
-```bash
-fastlane upload_metadata
+```sh
+[bundle exec] fastlane ios upload_to_app_store
 ```
 
-### Bump Version
+Upload to App Store Connect
 
-Increment version and create git tag:
+### ios beta
 
-```bash
-fastlane bump
+```sh
+[bundle exec] fastlane ios beta
 ```
 
-## Files Structure
+Upload to TestFlight
 
-```
-fastlane/
-├── Appfile                          # Apple ID and app identifier
-├── Fastfile                         # Automation lanes
-├── README.md                        # This file
-└── metadata/
-    └── en-US/
-        ├── name.txt                 # App name
-        ├── subtitle.txt             # Subtitle (30 chars)
-        ├── description.txt          # Full description
-        ├── keywords.txt             # Keywords (comma-separated)
-        ├── promotional_text.txt     # Promotional text (170 chars)
-        ├── release_notes.txt        # What's new
-        ├── support_url.txt          # Support URL
-        ├── marketing_url.txt        # Marketing URL
-        └── privacy_url.txt          # Privacy policy URL
+### ios print_subscription_instructions
+
+```sh
+[bundle exec] fastlane ios print_subscription_instructions
 ```
 
-## Troubleshooting
+Print subscription setup instructions
 
-### Authentication Issues
+### ios bump
 
-```bash
-fastlane fastlane-credentials remove --username your@email.com
-fastlane release  # Will re-prompt for credentials
+```sh
+[bundle exec] fastlane ios bump
 ```
 
-### Build Fails
+Bump version
 
-1. Make sure Xcode is properly configured
-2. Try: `fastlane build` to see detailed errors
-3. Build manually in Xcode first to verify
+----
 
-### Upload Fails
+This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
 
-- Check your Apple Developer account is active
-- Verify certificates are valid
-- Ensure app agreement is accepted in App Store Connect
+More information about _fastlane_ can be found on [fastlane.tools](https://fastlane.tools).
 
-## Next Steps
-
-After `fastlane release`:
-
-1. Go to App Store Connect
-2. Add screenshots (manual for now)
-3. Select build
-4. Submit for review
-
-## Support
-
-Questions? Contact: https://sundai.us/support
+The documentation of _fastlane_ can be found on [docs.fastlane.tools](https://docs.fastlane.tools).

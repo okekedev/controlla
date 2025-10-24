@@ -3,6 +3,15 @@
 default_platform(:ios)
 
 platform :ios do
+  # Configure App Store Connect API Key
+  before_all do
+    app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_filepath: ENV["APP_STORE_CONNECT_API_KEY_KEY_FILEPATH"],
+      in_house: false
+    )
+  end
 
   desc "Build and upload to App Store"
   lane :release do
@@ -20,12 +29,14 @@ platform :ios do
 
   desc "First-time setup"
   lane :setup do
+    # Register bundle ID in Developer Portal (via API)
     produce(
       app_identifier: "com.christianokeke.Controlla",
       app_name: "Controlla",
       language: "English",
       app_version: "1.0",
       sku: "controlla-2025"
+      # Using Admin API key - should handle both Developer Portal and App Store Connect
     )
 
     upload_metadata

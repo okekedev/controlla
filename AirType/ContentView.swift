@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var selectedDevice: DiscoveredDevice?
     @State private var showPaywall = false
     @State private var hasShownInitialPaywall = false
+    @State private var showOnboarding = !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
     enum Mode: String, CaseIterable {
         case control = "Control"
@@ -90,13 +91,25 @@ struct ContentView: View {
             .safeAreaInset(edge: .top) {
                 Color.clear.frame(height: 0)
             }
+            .sheet(isPresented: $showOnboarding) {
+                OnboardingView()
+                    .onDisappear {
+                        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+                        // Show paywall after onboarding if user is free
+                        if !storeManager.isPro {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showPaywall = true
+                            }
+                        }
+                    }
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
                     .environmentObject(storeManager)
             }
             .onAppear {
-                // Show paywall on launch for free users (once per session)
-                if !storeManager.isPro && !hasShownInitialPaywall {
+                // Show paywall on launch for free users (once per session, if onboarding already seen)
+                if !showOnboarding && !storeManager.isPro && !hasShownInitialPaywall {
                     // Small delay so the UI loads first
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         showPaywall = true

@@ -44,6 +44,7 @@ class NetworkManager: NSObject, ObservableObject {
     @Published var isControllerConnected = false // Receiver mode: is a controller connected?
     @Published var isDeviceConnected = false // Controller mode: successfully connected to device?
     @Published var hasAttemptedConnection = false // Have we tried sending a command yet?
+    // Default mode based on platform capability
     #if os(macOS)
     @Published var appMode: AppMode = .receiver {
         didSet {
@@ -51,7 +52,16 @@ class NetworkManager: NSObject, ObservableObject {
             updateServices()
         }
     }
+    #elseif targetEnvironment(macCatalyst)
+    // Mac Catalyst: Default to receiver since input simulation works
+    @Published var appMode: AppMode = .receiver {
+        didSet {
+            UserDefaults.standard.set(appMode.rawValue, forKey: "appMode")
+            updateServices()
+        }
+    }
     #else
+    // iOS/iPadOS: Controller only (input simulation doesn't work)
     @Published var appMode: AppMode = .controller {
         didSet {
             UserDefaults.standard.set(appMode.rawValue, forKey: "appMode")
@@ -282,7 +292,17 @@ class NetworkManager: NSObject, ObservableObject {
     func startReceiver() {
         guard !isReceiving else { return }
 
-        #if os(macOS)
+        // Only allow receiver mode on macOS or Mac Catalyst
+        // iOS/iPadOS cannot simulate input, so don't advertise
+        #if !os(macOS) && !targetEnvironment(macCatalyst)
+        DispatchQueue.main.async {
+            self.receiverStatus = "Input simulation not available on iOS"
+        }
+        print("⚠️ Receiver mode not supported on this platform")
+        return
+        #endif
+
+        #if os(macOS) || targetEnvironment(macCatalyst)
         // Check for Accessibility permissions on macOS
         if !InputSimulator.checkAccessibilityPermissions() {
             DispatchQueue.main.async {
