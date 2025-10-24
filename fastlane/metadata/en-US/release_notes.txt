@@ -1,0 +1,10 @@
+Welcome to Controlla!
+
+• Virtual joystick mouse control
+• Left and right click buttons
+• Text input and keyboard actions (Pro)
+• Auto-discovery via WiFi
+• Beautiful Game Boy-inspired interface
+• 7-day free trial for Pro features
+
+Control your Mac from anywhere in the room!

@@ -1,0 +1,52 @@
+Transform your iPhone or iPad into a wireless mouse and keyboard for your Mac. No dongles, no setup—just open the app and start controlling.
+
+**FREE FEATURES**
+• Virtual joystick mouse control with game-controller precision
+• Left and right click buttons (L/R Game Boy style)
+• Automatic device discovery via WiFi
+• Low-latency connection for smooth cursor movement
+• Works from anywhere in the room
+
+**PRO FEATURES ($0.99/month)**
+• Full text input - type anywhere on your Mac
+• Quick keyboard actions (Enter, Backspace, Space)
+• 7-day free trial
+• Family Sharing included
+
+**PERFECT FOR**
+• Controlling your Mac from the couch
+• Presentations and media playback
+• When you forget your mouse
+• Gaming and entertainment setups
+• Accessible computing
+
+**HOW IT WORKS**
+1. Open Controlla on your iPhone
+2. Select your Mac from discovered devices
+3. Start controlling immediately
+
+No computer software needed. No pairing codes. Just works.
+
+**REQUIREMENTS**
+• iPhone/iPad and Mac on the same WiFi network
+• macOS Accessibility permission (granted on first use)
+
+**PRIVACY**
+• All communication stays on your local network
+• No internet connection required
+• No data collected or shared
+• Your data never leaves your WiFi
+
+Built by Christian Okeke for Mac users who want freedom of movement. From your desk to your couch, Controlla keeps you in control.
+
+**SUBSCRIPTION DETAILS**
+
+Controlla Pro: $0.99/month
+• 7-day free trial
+• Cancel anytime
+• Family Sharing supported
+• Auto-renews unless cancelled 24 hours before period ends
+• Manage in Settings → [Your Name] → Subscriptions
+
+Privacy Policy: https://sundai.us/controlla/privacy
+Terms of Use: https://sundai.us/controlla/terms

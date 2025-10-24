@@ -1,0 +1,97 @@
+# Controlla - Fastlane Automation
+
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Build and upload to App Store"
+  lane :release do
+    version = UI.input("Version number (e.g., 1.0.0): ")
+    build_number = UI.input("Build number (e.g., 1): ")
+
+    increment_version_number(version_number: version)
+    increment_build_number(build_number: build_number)
+
+    build
+    upload_to_app_store
+
+    UI.success("🎉 Version #{version} uploaded!")
+  end
+
+  desc "First-time setup"
+  lane :setup do
+    produce(
+      app_identifier: "com.christianokeke.Controlla",
+      app_name: "Controlla",
+      language: "English",
+      app_version: "1.0",
+      sku: "controlla-2025"
+    )
+
+    upload_metadata
+    print_subscription_instructions
+
+    UI.success("✅ Setup complete!")
+  end
+
+  desc "Build the app"
+  lane :build do
+    clear_derived_data
+
+    gym(
+      scheme: "AirType",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "Controlla.ipa",
+      clean: true
+    )
+  end
+
+  desc "Upload metadata"
+  lane :upload_metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      force: true,
+      metadata_path: "./fastlane/metadata"
+    )
+  end
+
+  desc "Upload to App Store Connect"
+  lane :upload_to_app_store do
+    deliver(
+      ipa: "./build/Controlla.ipa",
+      skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
+
+  desc "Upload to TestFlight"
+  lane :beta do
+    increment_build_number
+    build
+    upload_to_testflight(skip_waiting_for_build_processing: true)
+  end
+
+  desc "Print subscription setup instructions"
+  lane :print_subscription_instructions do
+    UI.message("")
+    UI.important("Setup Subscription in App Store Connect:")
+    UI.message("Product ID: com.controlla.pro.monthly")
+    UI.message("Price: $0.99/month")
+    UI.message("Free Trial: 7 days")
+    UI.message("Family Sharing: Enabled")
+    UI.message("")
+  end
+
+  desc "Bump version"
+  lane :bump do
+    version = UI.input("New version: ")
+    increment_version_number(version_number: version)
+    commit_version_bump(message: "Bump to v#{version}")
+    add_git_tag(tag: "v#{version}")
+    push_to_git_remote
+  end
+end
