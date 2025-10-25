@@ -42,7 +42,7 @@ AirType/
 │   ├── version.py                    # Version management
 │   └── config.py                     # API credentials
 │
-├── fastlane/
+├── deployment/
 │   ├── AuthKey_3M7GV93JWG.p8        # API key (private)
 │   ├── metadata/en-US/              # App Store text files
 │   │   ├── name.txt
@@ -86,7 +86,7 @@ Archives macOS app with sandbox enabled and uploads to App Store Connect.
 ```bash
 python3 scripts/deploy.py --metadata
 ```
-Uploads app name, description, keywords, etc. from `fastlane/metadata/en-US/`.
+Uploads app name, description, keywords, etc. from `deployment/metadata/en-US/`.
 
 ### Upload iOS Screenshots
 ```bash
@@ -98,7 +98,7 @@ Uploads all iOS screenshots to App Store Connect automatically.
 ```bash
 python3 scripts/upload_macos_screenshots.py
 ```
-Uploads all macOS screenshots from `fastlane/screenshots/macos/`.
+Uploads all macOS screenshots from `deployment/screenshots/macos/`.
 
 ---
 
@@ -141,7 +141,7 @@ These cannot be automated via API:
 ### API Credentials (`deployment/config.py`)
 - Key ID: `3M7GV93JWG`
 - Issuer ID: `196f43aa-4520-4178-a7df-68db3cf7ee76`
-- Key file: `fastlane/AuthKey_3M7GV93JWG.p8`
+- Key file: `deployment/AuthKey_3M7GV93JWG.p8`
 
 ### App Info
 - Bundle ID: `com.christianokeke.maccontrolla`
@@ -193,7 +193,7 @@ python3 scripts/deploy.py --metadata
 - Ensure version is in PREPARE_FOR_SUBMISSION state
 
 ### API authentication fails
-- Verify `fastlane/AuthKey_3M7GV93JWG.p8` exists
+- Verify `deployment/AuthKey_3M7GV93JWG.p8` exists
 - Check API key is valid in App Store Connect → Users and Access → Keys
 
 ---

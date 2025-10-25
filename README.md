@@ -51,17 +51,38 @@ Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your 
 - Send throttling to prevent queue buildup
 - Velocity smoothing (35%) for consistent feel
 
-## Code Structure
+## Project Structure
 
 ```
-AirType/
-├── AirTypeApp.swift          # Main app entry point
-├── ContentView.swift         # SwiftUI UI with tabs and joystick
-├── NetworkManager.swift      # WiFi networking and Bonjour
-├── InputSimulator.swift      # Mac input simulation (CGEvent)
-├── HIDKeycodeMapper.swift    # Character to keycode mapping
-├── Assets.xcassets/          # App icons and colors
-└── Info.plist               # Permissions and configuration
+controlla/
+├── AirType/                  # Main app source code
+│   ├── ContentView.swift    # SwiftUI UI with tabs and joystick
+│   ├── NetworkManager.swift # WiFi networking and Bonjour
+│   ├── InputSimulator.swift # Mac input simulation
+│   └── PaywallView.swift    # Subscription paywall
+│
+├── deployment/               # App Store deployment automation
+│   ├── api.py               # App Store Connect API client
+│   ├── metadata.py          # Metadata upload
+│   ├── screenshots.py       # Screenshot upload
+│   ├── metadata/            # App Store text content
+│   ├── screenshots/         # iOS and macOS screenshots
+│   └── AuthKey_*.p8         # API key (gitignored)
+│
+├── scripts/                  # Build and deployment scripts
+│   ├── archive_and_upload.sh         # iOS build
+│   ├── archive_and_upload_macos.sh   # macOS build
+│   ├── deploy.py                     # Metadata/screenshot automation
+│   └── upload_macos_screenshots.py   # macOS screenshot upload
+│
+├── docs/                     # GitHub Pages website
+│   ├── index.html           # Landing page
+│   ├── privacy.html         # Privacy Policy
+│   └── terms.html           # Terms of Use
+│
+├── DEPLOYMENT.md             # Complete deployment guide
+├── NEXT_STEPS.md             # Submission checklist
+└── README.md                 # This file
 ```
 
 ## Getting Started
@@ -97,14 +118,35 @@ The Mac receiver requires Accessibility permissions to simulate keyboard and mou
 - **Mouse Clicks**: CGEvent mouse button simulation
 - **Coordinate System**: Top-left origin (standard macOS screen coordinates)
 
-## Future Enhancements
+## App Store Deployment
 
-- StoreKit 2 subscription system
-- Voice-to-text input
-- Clipboard sharing
-- Custom keyboard shortcuts
-- Multiple device support
-- Windows receiver support
+Automated deployment system using App Store Connect API:
+
+```bash
+# Build iOS and macOS
+./scripts/archive_and_upload.sh
+./scripts/archive_and_upload_macos.sh
+
+# Upload screenshots and metadata
+python3 scripts/deploy.py --screenshots
+python3 scripts/upload_macos_screenshots.py
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete guide and [NEXT_STEPS.md](NEXT_STEPS.md) for submission checklist.
+
+## GitHub Pages Setup
+
+The `docs/` folder contains the website hosted at https://okekedev.github.io/controlla/
+
+**To enable:**
+1. Push to GitHub
+2. Go to Settings → Pages
+3. Source: Deploy from branch `main` / folder `/docs`
+4. URLs:
+   - Privacy: https://okekedev.github.io/controlla/privacy.html
+   - Terms: https://okekedev.github.io/controlla/terms.html
+
+These URLs are required for App Store submission.
 
 ## License
 

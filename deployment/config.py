@@ -3,7 +3,7 @@
 # API Credentials
 KEY_ID = "3M7GV93JWG"
 ISSUER_ID = "196f43aa-4520-4178-a7df-68db3cf7ee76"
-KEY_FILE = "fastlane/AuthKey_3M7GV93JWG.p8"
+KEY_FILE = "deployment/AuthKey_3M7GV93JWG.p8"
 
 # App Configuration
 BUNDLE_ID = "com.christianokeke.maccontrolla"

@@ -18,13 +18,8 @@ __pycache__/
 # Deployment
 deployment/__pycache__/
 
-# fastlane
-fastlane/report.xml
-fastlane/Preview.html
-fastlane/test_output
-
 # App Store Connect
-fastlane/AuthKey_*.p8
+deployment/AuthKey_*.p8
 
 # Environment
 .env

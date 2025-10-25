@@ -27,7 +27,7 @@ def upload_metadata(api: AppStoreAPI, app_id: str) -> bool:
     localization_id = result["data"][0]["id"]
 
     # Read metadata files
-    metadata_path = Path("fastlane/metadata/en-US")
+    metadata_path = Path("deployment/metadata/en-US")
 
     metadata = {}
     if (metadata_path / "name.txt").exists():
@@ -73,7 +73,7 @@ def upload_version_metadata(api: AppStoreAPI, version_id: str) -> bool:
     localization_id = result["data"][0]["id"]
 
     # Read metadata files
-    metadata_path = Path("fastlane/metadata/en-US")
+    metadata_path = Path("deployment/metadata/en-US")
 
     metadata = {}
     if (metadata_path / "description.txt").exists():

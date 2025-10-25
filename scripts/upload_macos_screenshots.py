@@ -36,7 +36,7 @@ print(f"✅ Found version: {version_string} ({mac_version_id})")
 
 # Upload screenshots
 print("\n📸 Uploading macOS screenshots...")
-success = upload_screenshots(api, mac_version_id, "fastlane/screenshots/macos")
+success = upload_screenshots(api, mac_version_id, "deployment/screenshots/macos")
 
 if success:
     print("\n✅ macOS screenshots uploaded successfully!")

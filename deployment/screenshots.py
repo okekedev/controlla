@@ -29,7 +29,7 @@ def get_file_info(file_path: str):
     return file_size, md5_hash.hexdigest()
 
 
-def upload_screenshots(api: AppStoreAPI, version_id: str, screenshots_dir: str = "fastlane/screenshots/en-US"):
+def upload_screenshots(api: AppStoreAPI, version_id: str, screenshots_dir: str = "deployment/screenshots/en-US"):
     """
     Upload screenshots for app version
 
