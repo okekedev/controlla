@@ -3,13 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Controlla</string>
+	<string>Mac Controlla</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Controlla needs microphone access to convert your speech to text on your connected device.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Controlla uses speech recognition to type what you say on your connected device.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Controlla needs local network access to discover and connect to nearby devices on your WiFi network.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Controlla needs accessibility access to simulate keyboard and mouse input on your Mac.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_controlla._tcp</string>

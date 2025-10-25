@@ -72,3 +72,13 @@ class AppStoreAPI:
                 "error": response.text,
                 "status": response.status_code
             }
+
+    def delete(self, endpoint: str) -> bool:
+        """DELETE request"""
+        url = f"{BASE_URL}/{endpoint}"
+        response = requests.delete(url, headers=self.headers)
+
+        if response.status_code == 204:
+            return True
+        else:
+            return False

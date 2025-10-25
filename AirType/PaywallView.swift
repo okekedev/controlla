@@ -14,19 +14,20 @@ struct PaywallView: View {
 
     var body: some View {
         ZStack {
-            // Gradient background
+            // Gradient background (matches main app)
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(red: 0.4, green: 0.4, blue: 0.9),
-                    Color(red: 0.5, green: 0.5, blue: 1.0)
+                    Color(red: 0.4, green: 0.6, blue: 1.0),
+                    Color(red: 0.6, green: 0.4, blue: 1.0)
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 30) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 30) {
+                    Spacer().frame(height: 20)
 
                 // Logo
                 Image("Controlla")
@@ -42,16 +43,16 @@ struct PaywallView: View {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.white)
 
-                    Text("Get full control of your Mac")
+                    Text("Be most productive")
                         .font(.system(size: 18))
                         .foregroundColor(.white.opacity(0.9))
                 }
 
                 // Feature list
                 VStack(alignment: .leading, spacing: 20) {
-                    FeatureRow(icon: "keyboard", title: "Text Input", description: "Type anywhere on your Mac")
+                    FeatureRow(icon: "mic.fill", title: "Voice Input", description: "Type with your voice using your iPhone")
+                    FeatureRow(icon: "keyboard", title: "Text Input", description: "Type using your iPhone Keyboard")
                     FeatureRow(icon: "command", title: "Keyboard Actions", description: "Enter, Backspace, and Space keys")
-                    FeatureRow(icon: "sparkles", title: "Full Productivity", description: "Complete keyboard control")
                 }
                 .padding(.horizontal, 40)
                 .padding(.vertical, 30)
@@ -125,7 +126,7 @@ struct PaywallView: View {
                 }
                 .disabled(storeManager.isLoading)
 
-                Spacer()
+                Spacer().frame(height: 30)
 
                 // Privacy and Terms links
                 HStack(spacing: 20) {
@@ -140,7 +141,6 @@ struct PaywallView: View {
                         .font(.system(size: 12))
                         .foregroundColor(.white.opacity(0.6))
                 }
-                .padding(.bottom, 8)
 
                 // Close button (for free users who want to use joystick only)
                 Button(action: {
@@ -149,8 +149,10 @@ struct PaywallView: View {
                     Text("Continue with Free Version")
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.6))
-                        .padding(.bottom, 20)
                 }
+                .padding(.bottom, 40)
+                }
+                .padding(.horizontal, 0)
             }
         }
     }

@@ -8,6 +8,7 @@ Usage:
     ./deploy.py --setup            # Setup only (bundle ID + app check)
     ./deploy.py --metadata         # Upload metadata only
     ./deploy.py --build 1.0.0 1    # Build and upload only
+    ./deploy.py --screenshots      # Upload screenshots only
 """
 
 import sys
@@ -15,6 +16,7 @@ from deployment import AppStoreAPI
 from deployment.bundle import register_bundle_id, get_app_id
 from deployment.metadata import upload_metadata
 from deployment.build import build_and_upload
+from deployment.screenshots import upload_screenshots
 from deployment.version import (
     create_version,
     get_latest_build,
@@ -38,6 +40,7 @@ def main():
     setup_only = "--setup" in args
     metadata_only = "--metadata" in args
     build_only = "--build" in args
+    screenshots_only = "--screenshots" in args
 
     # Initialize API
     api = AppStoreAPI()
@@ -63,6 +66,49 @@ def main():
     if metadata_only:
         print("\n✅ Metadata uploaded!")
         return 0
+
+    # Screenshots only mode
+    if screenshots_only:
+        # Get the iOS version ID (filter by platform)
+        versions = api.get(f"apps/{app_id}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION&filter[platform]=IOS")
+        if versions.get("data") and len(versions["data"]) > 0:
+            version_id = versions["data"][0]["id"]
+            version_string = versions["data"][0]["attributes"]["versionString"]
+            platform = versions["data"][0]["attributes"]["platform"]
+            print(f"\n📱 Uploading screenshots for {platform} version {version_string}...")
+
+            if upload_screenshots(api, version_id):
+                print("\n✅ Screenshots uploaded successfully!")
+
+                # Check if build is attached
+                print("\n🔍 Checking if build is attached...")
+                version_details = api.get(f"appStoreVersions/{version_id}?include=build")
+                included = version_details.get("included", [])
+
+                if not included:
+                    print("⚠️  No build attached to version")
+                    print("🔍 Finding latest build...")
+                    build_id = get_latest_build(api, app_id)
+                    if build_id:
+                        print("🔗 Attaching build to version...")
+                        attach_build_to_version(api, version_id, build_id)
+                else:
+                    print("✅ Build already attached")
+
+                print("\n📋 Next steps (manual in App Store Connect):")
+                print("   1. Configure App Privacy (no data collection)")
+                print("   2. Set Age Rating (4+)")
+                print("   3. Add App Review Information (contact info + notes)")
+                print("   4. Submit for review")
+                print("\n   Visit: https://appstoreconnect.apple.com")
+
+                return 0
+            else:
+                print("\n❌ Screenshot upload failed")
+                return 1
+        else:
+            print("\n❌ No iOS version in PREPARE_FOR_SUBMISSION state found")
+            return 1
 
     # Get version info
     if build_only and len(args) >= 3:

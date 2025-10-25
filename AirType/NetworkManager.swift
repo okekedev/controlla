@@ -44,16 +44,9 @@ class NetworkManager: NSObject, ObservableObject {
     @Published var isControllerConnected = false // Receiver mode: is a controller connected?
     @Published var isDeviceConnected = false // Controller mode: successfully connected to device?
     @Published var hasAttemptedConnection = false // Have we tried sending a command yet?
+    @Published var needsAccessibilityPermissions = false // Mac only: Accessibility permissions needed
     // Default mode based on platform capability
     #if os(macOS)
-    @Published var appMode: AppMode = .receiver {
-        didSet {
-            UserDefaults.standard.set(appMode.rawValue, forKey: "appMode")
-            updateServices()
-        }
-    }
-    #elseif targetEnvironment(macCatalyst)
-    // Mac Catalyst: Default to receiver since input simulation works
     @Published var appMode: AppMode = .receiver {
         didSet {
             UserDefaults.standard.set(appMode.rawValue, forKey: "appMode")
@@ -82,6 +75,9 @@ class NetworkManager: NSObject, ObservableObject {
     // MARK: - Controller Connection
     private var controllerConnection: NWConnection?
     private var isSendingCommand = false
+    private var connectionRetryCount = 0
+    private var connectionRetryTimer: Timer?
+    private let maxRetries = 3
 
     // MARK: - Device Name
     var deviceName: String {
@@ -123,6 +119,9 @@ class NetworkManager: NSObject, ObservableObject {
         stopDiscovery()
         stopReceiver()
         disconnectFromDevice()
+        connectionRetryTimer?.invalidate()
+        connectionRetryTimer = nil
+        connectionRetryCount = 0
         isDeviceConnected = false
         isControllerConnected = false
         hasAttemptedConnection = false
@@ -133,10 +132,26 @@ class NetworkManager: NSObject, ObservableObject {
         // Disconnect from previous device if any
         disconnectFromDevice()
 
-        // Create connection to device
+        // Reset retry counter for new connection
+        connectionRetryCount = 0
+        connectionRetryTimer?.invalidate()
+        connectionRetryTimer = nil
+
+        attemptConnection(to: device)
+    }
+
+    private func attemptConnection(to device: DiscoveredDevice) {
+        // Create connection to device with timeout
         let host = NWEndpoint.Host(device.host)
         let port = NWEndpoint.Port(integerLiteral: UInt16(device.port))
-        let connection = NWConnection(host: host, port: port, using: .tcp)
+
+        let tcpOptions = NWProtocolTCP.Options()
+        tcpOptions.connectionTimeout = 5 // 5 second timeout
+
+        let parameters = NWParameters(tls: nil, tcp: tcpOptions)
+        parameters.includePeerToPeer = true
+
+        let connection = NWConnection(host: host, port: port, using: parameters)
 
         connection.stateUpdateHandler = { [weak self] state in
             DispatchQueue.main.async {
@@ -145,16 +160,35 @@ class NetworkManager: NSObject, ObservableObject {
                     print("✅ Connected to \(device.name)")
                     self?.isDeviceConnected = true
                     self?.hasAttemptedConnection = true
+                    self?.connectionRetryCount = 0
+
                 case .waiting(let error):
                     print("⏳ Waiting to connect: \(error)")
                     self?.isDeviceConnected = false
+
                 case .failed(let error):
                     print("❌ Connection failed: \(error)")
                     self?.isDeviceConnected = false
                     self?.hasAttemptedConnection = true
+
+                    // Retry with exponential backoff
+                    guard let self = self, self.connectionRetryCount < self.maxRetries else {
+                        print("⚠️ Max retries reached, giving up")
+                        return
+                    }
+
+                    self.connectionRetryCount += 1
+                    let delay = Double(self.connectionRetryCount) * 2.0 // 2s, 4s, 6s
+                    print("🔄 Retrying connection in \(delay)s (attempt \(self.connectionRetryCount)/\(self.maxRetries))")
+
+                    self.connectionRetryTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { _ in
+                        self.attemptConnection(to: device)
+                    }
+
                 case .cancelled:
                     print("🚫 Connection cancelled")
                     self?.isDeviceConnected = false
+
                 default:
                     break
                 }
@@ -166,6 +200,9 @@ class NetworkManager: NSObject, ObservableObject {
     }
 
     func disconnectFromDevice() {
+        connectionRetryTimer?.invalidate()
+        connectionRetryTimer = nil
+        connectionRetryCount = 0
         controllerConnection?.cancel()
         controllerConnection = nil
         isDeviceConnected = false
@@ -292,27 +329,15 @@ class NetworkManager: NSObject, ObservableObject {
     func startReceiver() {
         guard !isReceiving else { return }
 
-        // Only allow receiver mode on macOS or Mac Catalyst
-        // iOS/iPadOS cannot simulate input, so don't advertise
-        #if !os(macOS) && !targetEnvironment(macCatalyst)
-        DispatchQueue.main.async {
-            self.receiverStatus = "Input simulation not available on iOS"
-        }
-        print("⚠️ Receiver mode not supported on this platform")
-        return
-        #endif
-
-        #if os(macOS) || targetEnvironment(macCatalyst)
+        #if os(macOS)
         // Check for Accessibility permissions on macOS
-        if !InputSimulator.checkAccessibilityPermissions() {
-            DispatchQueue.main.async {
-                self.receiverStatus = "Accessibility permission required"
-            }
-            print("⚠️ Accessibility permissions needed. Opening System Preferences...")
-            // The permission prompt was already shown by checkAccessibilityPermissions
-            return
+        let hasPermissions = InputSimulator.checkAccessibilityPermissions()
+        DispatchQueue.main.async {
+            self.needsAccessibilityPermissions = !hasPermissions
         }
-        #endif
+        if !hasPermissions {
+            print("⚠️ Accessibility permissions needed - input simulation will not work until granted")
+        }
 
         do {
             let parameters = NWParameters.tcp
@@ -354,6 +379,13 @@ class NetworkManager: NSObject, ObservableObject {
                 self.receiverStatus = "Failed to start"
             }
         }
+        #else
+        // iOS/iPadOS: Receiver mode not supported
+        DispatchQueue.main.async {
+            self.receiverStatus = "Input simulation not available on iOS"
+        }
+        print("⚠️ Receiver mode not supported on this platform")
+        #endif
     }
 
     func stopReceiver() {

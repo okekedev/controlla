@@ -185,8 +185,19 @@ class InputSimulator {
     // MARK: - Accessibility Check
 
     static func checkAccessibilityPermissions() -> Bool {
+        // Check without prompting - just get the current state
+        return AXIsProcessTrusted()
+    }
+
+    static func requestAccessibilityPermissions() {
+        // Show the system permission dialog
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        return AXIsProcessTrustedWithOptions(options)
+        _ = AXIsProcessTrustedWithOptions(options)
+    }
+
+    static func hasAccessibilityPermissions() -> Bool {
+        // Check without prompting - for UI state checking
+        return AXIsProcessTrusted()
     }
 }
 
@@ -214,6 +225,14 @@ class InputSimulator {
     }
 
     static func checkAccessibilityPermissions() -> Bool {
+        return false // Not applicable on iOS
+    }
+
+    static func requestAccessibilityPermissions() {
+        // Not applicable on iOS
+    }
+
+    static func hasAccessibilityPermissions() -> Bool {
         return false // Not applicable on iOS
     }
 }

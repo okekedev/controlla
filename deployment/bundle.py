@@ -17,7 +17,7 @@ def register_bundle_id(api: AppStoreAPI) -> bool:
         print(f"✅ Bundle ID already registered")
         return True
 
-    # Create new bundle ID
+    # Create new bundle ID (use IOS for universal iOS + macOS apps)
     payload = {
         "data": {
             "type": "bundleIds",

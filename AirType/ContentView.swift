@@ -36,8 +36,8 @@ struct ContentView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                #if targetEnvironment(macCatalyst) || os(macOS)
-                // Mac/Catalyst: Receiver mode only
+                #if os(macOS)
+                // Mac: Receiver mode only
                 ReceiverView(networkManager: networkManager)
 
                 #else
@@ -74,6 +74,8 @@ struct ContentView: View {
             .safeAreaInset(edge: .top) {
                 Color.clear.frame(height: 0)
             }
+            #if !os(macOS)
+            // iOS only: Show onboarding and paywall
             .sheet(isPresented: $showOnboarding) {
                 OnboardingView()
                     .onDisappear {
@@ -100,6 +102,7 @@ struct ContentView: View {
                     }
                 }
             }
+            #endif
         }
     }
 }
@@ -153,7 +156,7 @@ struct DevicePickerView: View {
                         .font(.system(size: 18))
                         .foregroundColor(.white.opacity(0.8))
 
-                    Text("Make sure the other device is in Receiver mode")
+                    Text("Make sure the app is open on your Mac and you are connected to the same WiFi")
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -161,21 +164,31 @@ struct DevicePickerView: View {
                 }
                 Spacer()
             } else {
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(networkManager.discoveredDevices) { device in
-                            DeviceCard(
-                                device: device,
-                                isSelected: selectedDevice?.id == device.id,
-                                isConnected: networkManager.isDeviceConnected,
-                                onTap: {
-                                    selectedDevice = device
-                                    networkManager.connectToDevice(device)
-                                }
-                            )
+                VStack(spacing: 0) {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(networkManager.discoveredDevices) { device in
+                                DeviceCard(
+                                    device: device,
+                                    isSelected: selectedDevice?.id == device.id,
+                                    isConnected: networkManager.isDeviceConnected,
+                                    onTap: {
+                                        selectedDevice = device
+                                        networkManager.connectToDevice(device)
+                                    }
+                                )
+                            }
                         }
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
+
+                    // Connection troubleshooting tip
+                    Text("If you have connection issues, tap Refresh on both devices")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 15)
                 }
             }
         }
@@ -236,67 +249,122 @@ struct DeviceCard: View {
     }
 }
 
-// MARK: - Receiver View (Mac/Catalyst only)
+// MARK: - Receiver View (Mac only)
 struct ReceiverView: View {
     @ObservedObject var networkManager: NetworkManager
+    @State private var permissionCheckTimer: Timer?
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        ZStack {
+            // Centered content
+            VStack(spacing: 40) {
+                Spacer()
 
-            // Receiver icon
-            Image(systemName: "desktopcomputer")
-                .font(.system(size: 80))
-                .foregroundColor(.white.opacity(0.9))
+                // Receiver icon
+                Image(systemName: "desktopcomputer")
+                    .font(.system(size: 80))
+                    .foregroundColor(.white.opacity(0.9))
 
-            // Status
-            VStack(spacing: 15) {
+                // Title
                 Text("Receiver Mode")
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.white)
 
-                Text(networkManager.receiverStatus)
-                    .font(.title3)
+                // Download instruction
+                Text("Download iPhone App to Control")
+                    .font(.system(size: 18))
                     .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
 
-                if networkManager.isControllerConnected {
-                    HStack {
-                        Circle()
-                            .fill(Color.green)
-                            .frame(width: 14, height: 14)
-                        Text("Controller Connected")
-                            .foregroundColor(.white)
-                            .font(.headline)
+            // Connection status indicator
+            if networkManager.needsAccessibilityPermissions {
+                // Accessibility permissions needed
+                Button(action: {
+                    InputSimulator.requestAccessibilityPermissions()
+                }) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.shield")
+                            .font(.system(size: 16))
+                        Text("Enable Accessibility")
+                            .font(.system(size: 16, weight: .semibold))
                     }
-                    .padding(.top, 10)
-                } else if networkManager.isReceiving {
-                    HStack {
-                        Circle()
-                            .fill(Color.yellow)
-                            .frame(width: 14, height: 14)
-                        Text("Waiting for Connection")
-                            .foregroundColor(.white.opacity(0.8))
-                            .font(.subheadline)
-                    }
-                    .padding(.top, 10)
+                    .foregroundColor(Color(red: 0.5, green: 0.5, blue: 1.0))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                }
+                .buttonStyle(.plain)
+            } else if networkManager.isControllerConnected {
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 14, height: 14)
+                    Text("Controller Connected")
+                        .foregroundColor(.white)
+                        .font(.headline)
+                }
+            } else if networkManager.isReceiving {
+                HStack(spacing: 10) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.9)
+                    Text("Waiting for Connection")
+                        .foregroundColor(.white.opacity(0.9))
+                        .font(.subheadline)
                 }
             }
 
-            // Instructions
-            VStack(alignment: .leading, spacing: 12) {
-                InstructionText(text: "1. Open Controlla on your iPhone or iPad")
-                InstructionText(text: "2. Tap the Devices tab")
-                InstructionText(text: "3. Select this Mac to start controlling")
-            }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 25)
-            .background(Color.white.opacity(0.15))
-            .cornerRadius(15)
-            .padding(.horizontal, 30)
-
             Spacer()
+            }
+
+            // Refresh button overlay (doesn't affect centered content)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        networkManager.stopAll()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            networkManager.startReceiver()
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Refresh")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.25))
+                        .cornerRadius(20)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                Spacer()
+            }
         }
-        .padding(.top, 40)
+        .onAppear {
+            // Check permissions every 2 seconds when shown
+            permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                let hasPermissions = InputSimulator.hasAccessibilityPermissions()
+                if hasPermissions != !networkManager.needsAccessibilityPermissions {
+                    // Permission state changed, restart receiver
+                    networkManager.stopAll()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        networkManager.startReceiver()
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            permissionCheckTimer?.invalidate()
+            permissionCheckTimer = nil
+        }
     }
 }
 
@@ -329,7 +397,7 @@ struct ControlModeView: View {
             // Text Input Area
             ZStack(alignment: .topLeading) {
                 if textInput.isEmpty {
-                    Text("Tap to type...")
+                    Text("Tap to type or speak...")
                         .font(.system(size: 18))
                         .foregroundColor(.white.opacity(0.5))
                         .padding(.horizontal, 16)
@@ -606,9 +674,8 @@ struct VirtualJoystick: View {
                             accumulatedX = 0
                             accumulatedY = 0
                             smoothedOffset = .zero
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                offset = .zero
-                            }
+                            // Immediate reset to avoid animation timing conflicts
+                            offset = .zero
                         }
                 )
         }

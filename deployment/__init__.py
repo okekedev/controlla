@@ -7,7 +7,8 @@ from .api import AppStoreAPI
 from .bundle import register_bundle_id
 from .metadata import upload_metadata
 from .build import build_and_upload
-from .version import create_version, submit_for_review
+from .version import create_version, submit_for_review, get_latest_build, attach_build_to_version
+from .screenshots import upload_screenshots
 
 __all__ = [
     'AppStoreAPI',
@@ -15,5 +16,8 @@ __all__ = [
     'upload_metadata',
     'build_and_upload',
     'create_version',
-    'submit_for_review'
+    'submit_for_review',
+    'get_latest_build',
+    'attach_build_to_version',
+    'upload_screenshots'
 ]

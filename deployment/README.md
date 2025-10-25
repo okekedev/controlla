@@ -1,190 +1,250 @@
-# Controlla Deployment System
+# Deployment System - Technical Documentation
 
-TRUE automation for App Store submissions using the App Store Connect API (2025).
+App Store Connect automation using the official API.
 
-## What's Automated
+## System Overview
 
-✅ **Bundle ID Registration** - Automatic via API
-✅ **Metadata Upload** - Description, keywords, URLs, etc.
-✅ **Build Creation** - xcodebuild automation
-✅ **Build Upload** - altool with JWT authentication
-✅ **Version Management** - Create versions via API
-✅ **Review Submission** - Submit for App Store review
+**Language**: Python 3
+**API**: App Store Connect REST API (v1)
+**Authentication**: JWT with API key
 
-⚠️ **One-Time Manual Step**: Creating the app in App Store Connect (Apple API limitation)
+**What's Automated**:
+- Bundle ID registration
+- Metadata upload (text, URLs)
+- Screenshot upload (iOS and macOS)
+- Build attachment
+- App review detail configuration
+- Subscription creation
 
-## Setup
+**Not Automated** (Apple API limitations):
+- App privacy settings
+- Age rating
+- Final submission
 
-### 1. Install Dependencies
+---
 
-```bash
-pip3 install 'PyJWT[crypto]' cryptography requests
-```
-
-### 2. Configure API Key
-
-API key is already configured in `deployment/config.py`:
-- Key ID: `3M7GV93JWG`
-- Issuer ID: `196f43aa-4520-4178-a7df-68db3cf7ee76`
-- Key File: `fastlane/AuthKey_3M7GV93JWG.p8`
-
-### 3. Create App (One-Time)
-
-Since Apple's API doesn't support `POST /v1/apps`, you must create the app manually:
-
-1. Go to https://appstoreconnect.apple.com
-2. My Apps → + → New App
-3. Name: **Controlla**
-4. Bundle ID: **com.christianokeke.Controlla** (will be in dropdown after running setup)
-5. SKU: **controlla-2025**
-
-## Usage
-
-### Full Deployment
-
-```bash
-./deploy.py
-```
-
-This runs the complete workflow:
-1. Registers bundle ID (if needed)
-2. Verifies app exists
-3. Uploads metadata
-4. Prompts for version/build numbers
-5. Builds IPA
-6. Uploads to App Store Connect
-7. Creates version
-8. Optionally submits for review
-
-### Setup Only
-
-```bash
-./deploy.py --setup
-```
-
-Registers bundle ID and verifies app exists. Run this first to check everything is configured.
-
-### Metadata Only
-
-```bash
-./deploy.py --metadata
-```
-
-Uploads metadata from `fastlane/metadata/en-US/` without building.
-
-### Build Only
-
-```bash
-./deploy.py --build 1.0.0 1
-```
-
-Builds and uploads version 1.0.0 build 1.
-
-## Architecture
+## Module Structure
 
 ```
 deployment/
-├── __init__.py          # Module exports
-├── api.py               # App Store Connect API client (JWT auth)
-├── bundle.py            # Bundle ID registration
-├── build.py             # Xcode build & altool upload
-├── metadata.py          # Metadata upload
-├── version.py           # Version creation & review submission
-└── config.py            # Configuration
-
-deploy.py                # Main entry point
+├── api.py              # Base API client with JWT auth
+├── config.py           # API credentials
+├── bundle.py           # Bundle ID registration
+├── metadata.py         # Metadata upload to version localizations
+├── screenshots.py      # Screenshot upload with chunked transfer
+├── version.py          # Version and build management
+└── build.py            # Build attachment helpers
 ```
 
-## How It Works
+### api.py
+Core HTTP client for App Store Connect API.
 
-### Authentication
+**Methods**:
+- `get(endpoint)` - GET request
+- `post(endpoint, data)` - POST request
+- `patch(endpoint, data)` - PATCH request
+- `delete(endpoint)` - DELETE request
 
-Uses JWT (JSON Web Token) with App Store Connect API key:
+**Authentication**: JWT token generated from:
+- Private key (`AuthKey_*.p8`)
+- Key ID and Issuer ID
+- Token valid for 20 minutes
 
-```python
-from deployment import AppStoreAPI
+### screenshots.py
+Handles screenshot upload via multi-step process.
 
-api = AppStoreAPI()  # Auto-generates JWT from .p8 file
-result = api.get("apps?filter[bundleId]=com.christianokeke.Controlla")
-```
+**Display Types**:
+- `APP_IPHONE_69` - iPhone 6.9" (1320x2868)
+- `APP_IPHONE_61` - iPhone 6.1" (1179x2556)
+- `APP_IPAD_PRO_129` - iPad Pro 12.9" (2048x2732)
+- `APP_DESKTOP` - macOS (1440x900)
 
-### Bundle ID Registration
+**Upload Process**:
+1. Get version localization ID
+2. Create/find screenshot set for display type
+3. Reserve screenshot slot (POST `/appScreenshots`)
+4. Upload file chunks to signed URLs (PUT)
+5. Commit with checksum (PATCH `/appScreenshots/{id}`)
 
-```python
-POST /v1/bundleIds
-{
-  "data": {
-    "type": "bundleIds",
-    "attributes": {
-      "name": "Controlla",
-      "identifier": "com.christianokeke.Controlla",
-      "platform": "IOS"
-    }
-  }
-}
-```
+**File Naming**:
+- iOS: `1_iphone67-*.png`, `2_iphone61-*.png`, `3_ipad-*.png`
+- macOS: `4_mac-*.png`
 
-### Build Upload
+### metadata.py
+Uploads app metadata to version-level localizations.
 
-Uses `altool` with API key authentication:
+**Endpoints**:
+- `GET /apps/{id}/appStoreVersions` - Find version
+- `GET /appStoreVersions/{id}/appStoreVersionLocalizations` - Get localization
+- `PATCH /appStoreVersionLocalizations/{id}` - Update metadata
 
+**Metadata Fields**:
+- `name` - App name (30 chars max)
+- `subtitle` - Subtitle (30 chars max)
+- `description` - Full description
+- `keywords` - Comma-separated (100 chars max)
+- `promotionalText` - Featured text (170 chars max)
+- `supportURL` - Support website
+
+---
+
+## Build Scripts
+
+### archive_and_upload.sh (iOS)
 ```bash
+xcodebuild archive \
+  -project AirType.xcodeproj \
+  -scheme AirType \
+  -destination "generic/platform=iOS" \
+  CODE_SIGN_STYLE=Automatic \
+  DEVELOPMENT_TEAM=TUG3BHLSM4
+
+xcodebuild -exportArchive \
+  -exportOptionsPlist ExportOptions-iOS.plist
+
 xcrun altool --upload-app \
-  -f build/AirType.ipa \
+  --type ios \
   --apiKey 3M7GV93JWG \
   --apiIssuer 196f43aa-4520-4178-a7df-68db3cf7ee76
 ```
 
-### Version Creation
+### archive_and_upload_macos.sh (macOS)
+```bash
+xcodebuild archive \
+  -destination "generic/platform=macOS" \
+  CODE_SIGN_ENTITLEMENTS=AirType/AirType-macOS.entitlements \
+  ENABLE_APP_SANDBOX=YES
 
-```python
-POST /v1/appStoreVersions
-{
-  "data": {
-    "type": "appStoreVersions",
-    "attributes": {"versionString": "1.0.0"},
-    "relationships": {
-      "app": {"data": {"type": "apps", "id": app_id}}
-    }
-  }
-}
+xcodebuild -exportArchive \
+  -exportOptionsPlist ExportOptions-macOS.plist
 ```
 
-## Metadata Files
+**Key Differences**:
+- macOS requires entitlements file
+- macOS requires `ENABLE_APP_SANDBOX=YES`
+- macOS exports as `.pkg` instead of `.ipa`
 
-Metadata is read from `fastlane/metadata/en-US/`:
+---
 
-- `name.txt` - App name
-- `subtitle.txt` - Subtitle
-- `description.txt` - Full description
-- `keywords.txt` - Keywords (comma-separated)
-- `promotional_text.txt` - Promotional text
-- `release_notes.txt` - What's new
-- `privacy_url.txt` - Privacy policy URL
-- `support_url.txt` - Support URL
-- `marketing_url.txt` - Marketing URL
+## Configuration
 
-## Troubleshooting
+### API Credentials (config.py)
+```python
+KEY_ID = "3M7GV93JWG"
+ISSUER_ID = "196f43aa-4520-4178-a7df-68db3cf7ee76"
+KEY_FILE = "fastlane/AuthKey_3M7GV93JWG.p8"
+BASE_URL = "https://api.appstoreconnect.apple.com/v1"
+```
 
-### "Bundle ID not found"
-Run `./deploy.py --setup` first to register the bundle ID.
+### App Info
+- Bundle ID: `com.christianokeke.maccontrolla`
+- Team ID: `TUG3BHLSM4`
+- App ID: `6754469628`
 
-### "App not found"
-You need to create the app manually in App Store Connect (one-time step).
+---
 
-### Build upload fails
-Check that:
-- Xcode is installed
-- Signing certificates are valid
-- App Store Connect agreement is accepted
+## Usage
 
-### API authentication fails
-Verify the API key file exists at `fastlane/AuthKey_3M7GV93JWG.p8`.
+### Full Deployment
+```bash
+# iOS
+./scripts/archive_and_upload.sh
+python3 scripts/deploy.py --screenshots
 
-## Future Enhancements
+# macOS
+./scripts/archive_and_upload_macos.sh
+python3 scripts/upload_macos_screenshots.py
+```
 
-- Screenshot upload automation
-- Subscription management
-- TestFlight distribution
-- Webhook integration for build status
-- Multi-platform support (macOS, tvOS)
+### Individual Commands
+```bash
+# Metadata only
+python3 scripts/deploy.py --metadata
+
+# Screenshots only
+python3 scripts/deploy.py --screenshots           # iOS
+python3 scripts/upload_macos_screenshots.py       # macOS
+
+# Setup only (bundle ID)
+python3 scripts/deploy.py --setup
+```
+
+---
+
+## API Endpoints Used
+
+### Apps
+- `GET /apps` - List apps
+- `GET /apps/{id}/appStoreVersions` - Get versions
+
+### Versions
+- `POST /appStoreVersions` - Create version
+- `PATCH /appStoreVersions/{id}` - Update version
+- `GET /appStoreVersions/{id}/appStoreVersionLocalizations` - Get localizations
+
+### Builds
+- `GET /apps/{id}/builds` - List builds
+- `POST /buildBetaDetails` - Create beta detail
+- `POST /betaBuildLocalizations` - Create beta localization
+- `PATCH /appStoreVersions/{id}/relationships/build` - Attach build
+
+### Screenshots
+- `POST /appScreenshotSets` - Create screenshot set
+- `GET /appScreenshotSets/{id}/appScreenshots` - List screenshots
+- `POST /appScreenshots` - Reserve screenshot slot
+- `PATCH /appScreenshots/{id}` - Commit upload
+- `DELETE /appScreenshots/{id}` - Delete screenshot
+
+### Subscriptions
+- `POST /subscriptionGroups` - Create group
+- `POST /subscriptions` - Create subscription
+
+### Review
+- `POST /appStoreReviewDetails` - Create review detail
+- `PATCH /appStoreReviewDetails/{id}` - Update review detail
+
+---
+
+## Error Handling
+
+Common errors and solutions:
+
+### 409 Conflict
+Resource already exists - check if it can be reused or needs deletion.
+
+### 401 Unauthorized
+JWT token expired or invalid - regenerate token.
+
+### 422 Unprocessable Entity
+Invalid data format - check required fields and character limits.
+
+### Platform Filtering Required
+When querying versions, always filter by platform:
+```python
+api.get(f"apps/{app_id}/appStoreVersions?filter[platform]=IOS")
+```
+
+---
+
+## Limitations
+
+**Cannot be automated via API**:
+- App Privacy questionnaire
+- Age Rating questionnaire
+- Subscription pricing configuration
+- Intro offer configuration
+- **Intro offer localization** (Display Name, Description) - API can create offers but not localize them
+- Final "Submit for Review" button
+
+These must be completed manually in App Store Connect.
+
+**Research Note (Oct 2025)**: The App Store Connect API includes endpoints for reading and creating subscription introductory offers (`GET /v1/subscriptions/{id}/introductoryOffers`), but does not support creating or updating localizations for those offers. Localization must be added manually in App Store Connect UI.
+
+---
+
+## Security Notes
+
+- API key file (`AuthKey_*.p8`) should never be committed to git
+- JWT tokens expire after 20 minutes
+- All requests use HTTPS
+- API key has full App Store Connect access - protect it carefully

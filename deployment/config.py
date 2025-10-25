@@ -6,8 +6,8 @@ ISSUER_ID = "196f43aa-4520-4178-a7df-68db3cf7ee76"
 KEY_FILE = "fastlane/AuthKey_3M7GV93JWG.p8"
 
 # App Configuration
-BUNDLE_ID = "com.christianokeke.Controlla"
-APP_NAME = "Controlla for Mac"
+BUNDLE_ID = "com.christianokeke.maccontrolla"
+APP_NAME = "Mac Controlla"
 SKU = "controlla"
 TEAM_ID = "TUG3BHLSM4"
 

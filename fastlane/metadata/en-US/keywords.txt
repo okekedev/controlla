@@ -1,1 +1,1 @@
-wireless mouse,remote control,mac mouse,keyboard,trackpad,controller,wifi,accessibility,presentation
+wireless mouse,remote control,voice typing,dictation,presentation remote,mac keyboard,speech to text,accessibility,wifi control
