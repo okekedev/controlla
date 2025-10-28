@@ -29,7 +29,7 @@
 	<key>CFBundleName</key>
 	<string>AirControlla</string>
 	<key>CFBundleIconFile</key>
-	<string>AppIcon</string>
+	<string>AppIcon.icns</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
@@ -37,7 +37,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
