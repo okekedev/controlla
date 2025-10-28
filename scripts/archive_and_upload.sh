@@ -21,12 +21,12 @@ echo "📦 Exporting for App Store with automatic signing..."
 xcodebuild -exportArchive \
   -archivePath build/Controlla.xcarchive \
   -exportPath build \
-  -exportOptionsPlist ExportOptions.plist \
+  -exportOptionsPlist scripts/ExportOptions.plist \
   -allowProvisioningUpdates
 
 echo ""
 echo "⬆️  Uploading to App Store Connect..."
-export API_PRIVATE_KEYS_DIR="./fastlane"
+export API_PRIVATE_KEYS_DIR="./deployment"
 xcrun altool \
   --upload-app \
   -f build/AirType.ipa \

@@ -3,13 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Mac Controlla</string>
+	<string>AirControlla</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Controlla needs microphone access to convert your speech to text on your connected device.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>Controlla uses speech recognition to type what you say on your connected device.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Controlla needs local network access to discover and connect to nearby devices on your WiFi network.</string>
 	<key>NSAppleEventsUsageDescription</key>
@@ -31,13 +27,17 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>AirControlla</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>3</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

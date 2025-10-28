@@ -9,9 +9,10 @@ from .api import AppStoreAPI
 
 # Display size type mapping for App Store Connect API
 DISPLAY_TYPES = {
-    "iphone67": "APP_IPHONE_69",      # iPhone 16 Pro Max (1320x2868) - 6.9" Display
+    "iphone67": "APP_IPHONE_67",      # iPhone 16 Pro Max (1320x2868) - 6.7" Display
+    "iphone65": "APP_IPHONE_65",      # iPhone 11/12/13/14 Pro Max (1284x2778) - 6.5" Display
     "iphone61": "APP_IPHONE_61",      # iPhone 14 Pro, 15 Pro (1179x2556)
-    "ipad": "APP_IPAD_PRO_129",       # iPad Pro 12.9" (2048x2732)
+    "ipad": "APP_IPAD_PRO_3GEN_129",  # iPad Pro 13" (2064x2752)
     "mac": "APP_DESKTOP"              # macOS Desktop (1440x900)
 }
 
@@ -61,6 +62,7 @@ def upload_screenshots(api: AppStoreAPI, version_id: str, screenshots_dir: str =
     # Group screenshots by display type
     screenshot_groups = {
         "iphone67": [],
+        "iphone65": [],
         "iphone61": [],
         "ipad": [],
         "mac": []
@@ -70,6 +72,8 @@ def upload_screenshots(api: AppStoreAPI, version_id: str, screenshots_dir: str =
         filename = file.name
         if filename.startswith("1_iphone67"):
             screenshot_groups["iphone67"].append(str(file))
+        elif filename.startswith("1b_iphone65"):
+            screenshot_groups["iphone65"].append(str(file))
         elif filename.startswith("2_iphone61"):
             screenshot_groups["iphone61"].append(str(file))
         elif filename.startswith("3_ipad"):
@@ -114,20 +118,22 @@ def get_or_create_screenshot_set(api: AppStoreAPI, localization_id: str, display
     """Get existing screenshot set or create new one"""
 
     # Check if screenshot set already exists
-    existing = api.get(f"appStoreVersionLocalizations/{localization_id}/appScreenshotSets?filter[screenshotDisplayType]={display_type}")
+    existing = api.get(f"appStoreVersionLocalizations/{localization_id}/appScreenshotSets")
 
-    if existing.get("data") and len(existing["data"]) > 0:
-        screenshot_set_id = existing["data"][0]["id"]
-        print(f"  ✅ Found existing screenshot set: {screenshot_set_id}")
+    # Filter manually to find matching display type
+    for screenshot_set in existing.get("data", []):
+        if screenshot_set["attributes"]["screenshotDisplayType"] == display_type:
+            screenshot_set_id = screenshot_set["id"]
+            print(f"  ✅ Found existing screenshot set: {screenshot_set_id}")
 
-        # Delete existing screenshots in the set
-        screenshots = api.get(f"appScreenshotSets/{screenshot_set_id}/appScreenshots")
-        if screenshots.get("data"):
-            print(f"  🗑️  Deleting {len(screenshots['data'])} existing screenshots...")
-            for screenshot in screenshots["data"]:
-                api.delete(f"appScreenshots/{screenshot['id']}")
+            # Delete existing screenshots in the set
+            screenshots = api.get(f"appScreenshotSets/{screenshot_set_id}/appScreenshots")
+            if screenshots.get("data"):
+                print(f"  🗑️  Deleting {len(screenshots['data'])} existing screenshots...")
+                for screenshot in screenshots["data"]:
+                    api.delete(f"appScreenshots/{screenshot['id']}")
 
-        return screenshot_set_id
+            return screenshot_set_id
 
     # Create new screenshot set
     print(f"  📦 Creating new screenshot set for {display_type}...")

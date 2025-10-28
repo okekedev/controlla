@@ -1,4 +1,4 @@
-# Mac Controlla - App Store Deployment Guide
+# AirControlla - App Store Deployment Guide
 
 Simple guide for deploying iOS and macOS apps to App Store Connect using automation.
 
@@ -34,16 +34,16 @@ AirType/
 │   ├── ExportOptions.plist           # iOS export config
 │   └── ExportOptions-macOS.plist     # macOS export config
 │
-├── deployment/                        # API modules
+├── deployment/                        # Deployment resources
 │   ├── api.py                        # App Store Connect API client
 │   ├── bundle.py                     # Bundle ID registration
 │   ├── metadata.py                   # Metadata upload
 │   ├── screenshots.py                # Screenshot upload
 │   ├── version.py                    # Version management
-│   └── config.py                     # API credentials
-│
-├── deployment/
+│   ├── config.py                     # API credentials
 │   ├── AuthKey_3M7GV93JWG.p8        # API key (private)
+│   ├── promotional/                  # Promotional images
+│   │   └── pro_subscription_promo.png # 1024x1024 subscription promo
 │   ├── metadata/en-US/              # App Store text files
 │   │   ├── name.txt
 │   │   ├── subtitle.txt
@@ -127,12 +127,13 @@ These cannot be automated via API:
 3. **Subscription Setup**:
    - Configure pricing ($0.99/month)
    - Set up 7-day free trial (introductory offer)
-   - **Add localization for introductory offer** (Display Name: "7-Day Free Trial", Description: "Try all Pro features free for 7 days")
-   - Add review screenshot
+   - Add localization for introductory offer (Display Name: "7-Day Free Trial", Description: "Try all Pro features free for 7 days")
+   - Upload promotional image (1024x1024) - use `deployment/promotional/pro_subscription_promo.png`
 4. **Subscription Linking** - Add subscription to In-App Purchases section for both iOS and macOS versions
-5. **Submit for Review** - Click submit button
+5. **Select Builds** - Choose the latest build for both iOS and macOS
+6. **Submit for Review** - Click submit button
 
-**Note**: Subscription introductory offer localization cannot be automated via API as of Oct 2025. The API supports reading/creating offers but not localizing them. This must be done manually in App Store Connect.
+**Note**: Subscription introductory offer localization and promotional images cannot be automated via API as of Oct 2025. These must be uploaded manually in App Store Connect.
 
 ---
 
@@ -144,7 +145,8 @@ These cannot be automated via API:
 - Key file: `deployment/AuthKey_3M7GV93JWG.p8`
 
 ### App Info
-- Bundle ID: `com.christianokeke.maccontrolla`
+- App Name: `AirControlla`
+- Bundle ID: `com.christianokeke.maccontrolla` (do not change - used for app identity)
 - Team ID: `TUG3BHLSM4`
 - iOS App ID: `6754469628`
 - Subscription: Monthly ($0.99) with 7-day trial
@@ -198,23 +200,26 @@ python3 scripts/deploy.py --metadata
 
 ---
 
-## Current Status (Oct 25, 2025)
+## Current Status (Oct 27, 2025)
 
 ### iOS Version 1.0
-- ✅ Build uploaded (Build 1)
+- ✅ Build 2 uploaded and submitted for review
+- ✅ App name updated to "AirControlla"
+- ✅ Microphone entitlement removed
 - ✅ Screenshots uploaded (11 screenshots)
 - ✅ Metadata uploaded
-- ✅ App Review Detail configured
-- ✅ Subscription created ($0.99/month, 7-day trial)
-- ⚠️ Ready to submit (after linking subscription)
+- ✅ Subscription created with promotional image
+- 🔄 In review
 
 ### macOS Version 1.0
-- ✅ Build uploaded (Build 1)
+- ✅ Build 2 uploaded and submitted for review
+- ✅ App name updated to "AirControlla"
+- ✅ Microphone entitlement removed
 - ✅ Screenshots uploaded (3 screenshots)
 - ✅ Metadata uploaded
-- ✅ App Review Detail configured
-- ⚠️ Ready to submit (after linking subscription)
+- ✅ Subscription linked
+- 🔄 In review
 
 ---
 
-**Next**: Link subscription to both versions in App Store Connect, then submit for review.
+**Next**: Wait for Apple review (typically 1-3 days).

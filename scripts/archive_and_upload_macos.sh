@@ -24,12 +24,12 @@ echo "📦 Exporting for Mac App Store..."
 xcodebuild -exportArchive \
   -archivePath build/Controlla-macOS.xcarchive \
   -exportPath build/macos \
-  -exportOptionsPlist ExportOptions-macOS.plist \
+  -exportOptionsPlist scripts/ExportOptions-macOS.plist \
   -allowProvisioningUpdates
 
 echo ""
 echo "⬆️  Uploading macOS app to App Store Connect..."
-export API_PRIVATE_KEYS_DIR="./fastlane"
+export API_PRIVATE_KEYS_DIR="./deployment"
 xcrun altool \
   --upload-app \
   -f build/macos/*.pkg \
