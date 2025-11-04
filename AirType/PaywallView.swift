@@ -106,9 +106,33 @@ struct PaywallView: View {
                     }
                     .padding(.horizontal, 30)
                     .disabled(storeManager.isLoading)
-                } else {
+                } else if storeManager.isLoading {
+                    // Loading products
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .padding(.vertical, 18)
+                } else {
+                    // Products failed to load - show retry button
+                    VStack(spacing: 12) {
+                        Text("Unable to load subscription")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.9))
+
+                        Button(action: {
+                            Task {
+                                await storeManager.loadProducts()
+                            }
+                        }) {
+                            Text("Retry")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(Color(red: 0.5, green: 0.5, blue: 1.0))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.white)
+                                .cornerRadius(14)
+                        }
+                        .padding(.horizontal, 30)
+                    }
                 }
 
                 // Restore button

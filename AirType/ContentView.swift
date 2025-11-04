@@ -253,6 +253,7 @@ struct DeviceCard: View {
 struct ReceiverView: View {
     @ObservedObject var networkManager: NetworkManager
     @State private var permissionCheckTimer: Timer?
+    @State private var showAccessibilityAlert = false
 
     var body: some View {
         ZStack {
@@ -282,6 +283,7 @@ struct ReceiverView: View {
                 // Accessibility permissions needed
                 Button(action: {
                     InputSimulator.requestAccessibilityPermissions()
+                    showAccessibilityAlert = true
                 }) {
                     HStack(spacing: 10) {
                         Image(systemName: "lock.shield")
@@ -296,6 +298,26 @@ struct ReceiverView: View {
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
+                .alert("Enable Accessibility Access", isPresented: $showAccessibilityAlert) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("""
+                    System Settings should automatically open.
+
+                    If AirControlla doesn't appear in the Accessibility list:
+
+                    1. Open System Settings
+                    2. Go to Privacy & Security → Accessibility
+                    3. Click the "+" button at the bottom
+                    4. Search for and select "AirControlla"
+                    5. Click Open
+                    6. Toggle the permission ON
+
+                    Note: macOS 26 Tahoe has a known issue where apps don't automatically appear in the Accessibility list. Use the "+" button to manually add AirControlla.
+
+                    After enabling accessibility, the connection will automatically restart. Make sure both devices are on the same WiFi network.
+                    """)
+                }
             } else if networkManager.isControllerConnected {
                 HStack(spacing: 10) {
                     Circle()
@@ -349,14 +371,21 @@ struct ReceiverView: View {
             }
         }
         .onAppear {
+            // Start receiver immediately
+            networkManager.startReceiver()
+
             // Check permissions every 2 seconds when shown
             permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
                 let hasPermissions = InputSimulator.hasAccessibilityPermissions()
                 if hasPermissions != !networkManager.needsAccessibilityPermissions {
-                    // Permission state changed, restart receiver
+                    // Permission state changed, restart receiver with multiple retries
                     networkManager.stopAll()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        networkManager.startReceiver()
+
+                    // Retry connection 3 times with increasing delays
+                    for attempt in 0..<3 {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + Double(attempt + 1) * 1.0) {
+                            networkManager.startReceiver()
+                        }
                     }
                 }
             }

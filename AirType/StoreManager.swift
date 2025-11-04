@@ -19,7 +19,7 @@ class StoreManager: ObservableObject {
 
     // MARK: - Product IDs
     // NOTE: These must match your App Store Connect configuration
-    private let monthlySubscriptionID = "com.controlla.pro.monthly"
+    private let monthlySubscriptionID = "com.christianokeke.maccontrolla.pro.monthly"
 
     // MARK: - Transaction Updates
     private var updateListenerTask: Task<Void, Error>? = nil
