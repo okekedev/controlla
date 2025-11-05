@@ -63,34 +63,66 @@ class StoreManager: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        // Start purchase
-        let result = try await product.purchase()
+        do {
+            // Start purchase with timeout to prevent infinite spinner
+            // This handles cases where StoreKit gets stuck between sandbox/production environments
+            let result = try await withTimeout(seconds: 30) {
+                try await product.purchase()
+            }
 
-        switch result {
-        case .success(let verification):
-            // Verify the transaction
-            let transaction = try StoreManager.checkVerified(verification)
+            switch result {
+            case .success(let verification):
+                // Verify the transaction
+                let transaction = try StoreManager.checkVerified(verification)
 
-            // Update Pro status
-            await updateProStatus()
+                // Update Pro status
+                await updateProStatus()
 
-            // Finish the transaction
-            await transaction.finish()
+                // Finish the transaction
+                await transaction.finish()
 
-            print("✅ Purchase successful")
-            return true
+                print("✅ Purchase successful")
+                return true
 
-        case .userCancelled:
-            print("ℹ️ User cancelled purchase")
-            return false
+            case .userCancelled:
+                print("ℹ️ User cancelled purchase")
+                return false
 
-        case .pending:
-            print("⏳ Purchase pending")
-            return false
+            case .pending:
+                print("⏳ Purchase pending")
+                return false
 
-        @unknown default:
-            print("⚠️ Unknown purchase result")
-            return false
+            @unknown default:
+                print("⚠️ Unknown purchase result")
+                return false
+            }
+        } catch is TimeoutError {
+            print("❌ Purchase timed out after 30 seconds")
+            throw StoreError.purchaseTimeout
+        } catch {
+            print("❌ Purchase failed: \(error)")
+            throw error
+        }
+    }
+
+    // MARK: - Timeout Helper
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            // Add the actual operation
+            group.addTask {
+                try await operation()
+            }
+
+            // Add a timeout task
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+
+            // Return the first result (either success or timeout)
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 
@@ -173,4 +205,8 @@ class StoreManager: ObservableObject {
 // MARK: - Store Errors
 enum StoreError: Error {
     case failedVerification
+    case purchaseTimeout
 }
+
+// MARK: - Timeout Error
+struct TimeoutError: Error {}
