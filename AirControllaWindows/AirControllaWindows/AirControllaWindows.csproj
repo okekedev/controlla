@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <AssemblyName>AirControlla</AssemblyName>
+    <Product>AirControlla for Windows</Product>
+    <Version>1.0.0</Version>
+    <Authors>Christian Okeke</Authors>
+    <Company>Christian Okeke</Company>
+    <Description>Control your Windows PC from your iPhone</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Zeroconf" Version="3.6.11" />
+    <PackageReference Include="InputSimulatorCore" Version="1.0.5" />
+    <PackageReference Include="EmbedIO" Version="3.5.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>
