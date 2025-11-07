@@ -1,6 +1,6 @@
 # Controlla - Wireless Keyboard + Mouse Controller
 
-Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your Mac over WiFi. Control your computer from anywhere in the room with smooth joystick navigation, text input, and mouse clicks.
+Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your Mac or Windows PC over WiFi. Control your computer from anywhere in the room with smooth joystick navigation, text input, and mouse clicks.
 
 ## Features
 
@@ -22,12 +22,18 @@ Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your 
 ## Platform Support
 
 - **Controller**: iPhone, iPad, Mac
-- **Receiver**: Mac only
+- **Receiver**: Mac, Windows
 
 ## Requirements
 
+### iOS/macOS App
 - iOS 15.0+ or macOS 12.0+
 - Xcode 16.4
+- WiFi network (devices must be on same network)
+
+### Windows App
+- Windows 10/11
+- .NET 8.0 SDK (for building from source)
 - WiFi network (devices must be on same network)
 
 ## Architecture
@@ -55,11 +61,18 @@ Controlla turns your iPhone or iPad into a wireless keyboard and mouse for your 
 
 ```
 controlla/
-├── AirType/                  # Main app source code
+├── AirType/                  # iOS/macOS app source code
 │   ├── ContentView.swift    # SwiftUI UI with tabs and joystick
 │   ├── NetworkManager.swift # WiFi networking and Bonjour
 │   ├── InputSimulator.swift # Mac input simulation
 │   └── PaywallView.swift    # Subscription paywall
+│
+├── AirControllaWindows/      # Windows receiver app
+│   └── AirControllaWindows/
+│       ├── NetworkManager.cs      # TCP listener and mDNS
+│       ├── InputSimulator.cs      # Windows input simulation
+│       ├── MainWindow.xaml        # WPF UI
+│       └── AirControllaWindows.csproj
 │
 ├── deployment/               # App Store deployment automation
 │   ├── api.py               # App Store Connect API client
@@ -94,17 +107,40 @@ controlla/
 4. Grant Accessibility permissions when prompted
 5. App will show "Ready - [Your Mac Name]"
 
+### Windows (Receiver)
+1. Download `AirControlla.exe` from [Releases](https://github.com/okekedev/controlla/releases)
+2. Run the executable (Windows will prompt for firewall access - allow it)
+3. The app will show "Receiver Mode" and wait for connection
+4. Both devices must be on the same WiFi network
+
+**Building from source:**
+```bash
+cd AirControllaWindows/AirControllaWindows
+dotnet restore
+dotnet build
+dotnet run
+```
+
+**Creating distributable .exe:**
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+# Output: bin/Release/net8.0-windows/win-x64/publish/AirControlla.exe
+```
+
 ### iPhone/iPad (Controller)
 1. Build and run on iPhone/iPad
-2. Ensure you're on the same WiFi as your Mac
+2. Ensure you're on the same WiFi as your Mac/PC
 3. Go to "Devices" tab
-4. Select your Mac from the discovered devices list
-5. Use the joystick, text input, and buttons to control your Mac
+4. Select your computer from the discovered devices list
+5. Use the joystick, text input, and buttons to control your computer
 
 ## Technical Details
 
-### macOS Accessibility Permissions
-The Mac receiver requires Accessibility permissions to simulate keyboard and mouse input. The app will prompt you to grant this on first launch.
+### Permissions
+
+**macOS:** Accessibility permissions required for input simulation (prompted on first launch)
+
+**Windows:** Firewall access required for network communication (prompted on first launch). For full input simulation, run as Administrator.
 
 ### Network Security
 - Only works on same WiFi network

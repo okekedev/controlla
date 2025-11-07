@@ -30,3 +30,15 @@ deployment/AuthKey_*.p8
 # IDE
 .vscode/
 .idea/
+
+# .NET / Windows
+**/bin/
+**/obj/
+**/publish/
+*.exe
+*.dll
+*.pdb
+*.user
+*.suo
+*.cache
+.vs/

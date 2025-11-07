@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using WindowsInput;
 using WindowsInput.Native;
 
@@ -12,7 +11,7 @@ namespace AirControllaWindows
     /// </summary>
     public static class InputSimulator
     {
-        private static readonly InputSimulator _simulator = new InputSimulator();
+        private static readonly WindowsInput.InputSimulator _simulator = new WindowsInput.InputSimulator();
 
         // MARK: - Keyboard Simulation
 
@@ -89,13 +88,16 @@ namespace AirControllaWindows
         {
             try
             {
-                var currentPos = Cursor.Position;
+                // Get current cursor position using Win32 API
+                GetCursorPos(out POINT currentPos);
+
                 // Note: deltaY is negative when moving down (joystick pushed down)
                 // Windows Y increases downward, so we negate deltaY
                 int newX = currentPos.X + deltaX;
                 int newY = currentPos.Y - deltaY;
 
-                Cursor.Position = new System.Drawing.Point(newX, newY);
+                // Set new cursor position
+                SetCursorPos(newX, newY);
             }
             catch (Exception ex)
             {
@@ -120,7 +122,8 @@ namespace AirControllaWindows
                         _simulator.Mouse.RightButtonClick();
                         break;
                     case "middle":
-                        _simulator.Mouse.MiddleButtonClick();
+                        // Middle button not supported in InputSimulatorCore
+                        Console.WriteLine("⚠️ Middle button not supported");
                         break;
                     default:
                         Console.WriteLine($"⚠️ Unknown button: {button}");
@@ -228,5 +231,20 @@ namespace AirControllaWindows
                 _ => null
             };
         }
+
+        // MARK: - Win32 API for mouse positioning
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int x, int y);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
     }
 }

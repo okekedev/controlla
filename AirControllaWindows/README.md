@@ -2,59 +2,78 @@
 
 Windows receiver app for AirControlla - allows you to control your Windows PC from your iPhone.
 
-## Prerequisites
+## Download
+
+**[Download AirControlla.exe from Releases](https://github.com/okekedev/controlla/releases)**
+
+Just download and run - no installation required!
+
+## Prerequisites for Building
 
 1. **Windows 10/11 PC**
-2. **Visual Studio 2022** (Community Edition is free)
-   - Download: https://visualstudio.microsoft.com/downloads/
-   - During installation, select ".NET desktop development" workload
-3. **.NET 8.0 SDK** (included with Visual Studio)
+2. **.NET 8.0 SDK**
+   - Download: https://dotnet.microsoft.com/download/dotnet/8.0
+   - Or use Visual Studio 2022 (includes .NET SDK)
 
-## How to Build
+## Quick Start
 
-### On Windows PC:
+### Using Pre-built Executable
+1. Download `AirControlla.exe` from releases
+2. Run the executable
+3. Allow Windows Firewall access when prompted
+4. The app will show "Receiver Mode" - ready to connect!
 
-1. **Open Visual Studio 2022**
-2. Click **"Create a new project"**
-3. Search for **"WPF Application"**
-4. Select **"WPF App (.NET)"** (not .NET Framework)
-5. Name it: `AirControllaWindows`
-6. Framework: **.NET 8.0**
-7. Click **Create**
+### Building from Source
 
-### Install Required NuGet Packages:
-
-In Visual Studio:
-1. Right-click on project → **"Manage NuGet Packages"**
-2. Install these packages:
-   - `Zeroconf` - For Bonjour/mDNS discovery
-   - `InputSimulatorCore` - For keyboard/mouse simulation
-   - `EmbedIO` - For HTTP server
-   - `Newtonsoft.Json` - For JSON parsing
-
-OR use Package Manager Console:
-```powershell
-Install-Package Zeroconf
-Install-Package InputSimulatorCore
-Install-Package EmbedIO
-Install-Package Newtonsoft.Json
+```bash
+cd AirControllaWindows/AirControllaWindows
+dotnet restore
+dotnet build
+dotnet run
 ```
+
+### Creating Distributable .exe
+
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+```
+
+Output: `bin/Release/net8.0-windows/win-x64/publish/AirControlla.exe`
+
+## NuGet Packages
+
+The project uses:
+- `Makaretu.Dns.Multicast` - mDNS/Bonjour service advertising
+- `InputSimulatorCore` - Keyboard/mouse input simulation
+- `Newtonsoft.Json` - JSON parsing
 
 ## Architecture
 
-The Windows app mirrors the macOS receiver:
+The Windows app mirrors the macOS receiver implementation:
 
 ```
 iPhone (Controller) → WiFi Network → Windows PC (Receiver)
+                                      ↓
+                                  Raw TCP Listener
                                       ↓
                                   Simulates Input
 ```
 
 ### Components:
 
-1. **NetworkManager.cs** - Bonjour service advertising + HTTP server
-2. **InputSimulator.cs** - Keyboard/mouse input simulation
-3. **MainWindow.xaml** - UI (status display)
+1. **NetworkManager.cs** - Raw TCP listener + mDNS advertising
+   - Uses `TcpListener` for persistent connections
+   - Manually parses HTTP requests (matches macOS NWConnection approach)
+   - Advertises via `Makaretu.Dns.Multicast`
+
+2. **InputSimulator.cs** - Windows input simulation
+   - Uses `InputSimulatorCore` for keyboard/mouse
+   - Uses Win32 API for precise mouse positioning
+
+3. **MainWindow.xaml/.cs** - WPF UI
+   - Centered design matching macOS receiver
+   - Real-time connection status
+   - Desktop icon and clean blue theme
 
 ## Files in This Folder
 
@@ -75,10 +94,17 @@ iPhone (Controller) → WiFi Network → Windows PC (Receiver)
 
 | Feature | macOS | Windows |
 |---------|-------|---------|
-| Bonjour | Built-in (Network.framework) | Zeroconf library |
-| HTTP Server | Built-in (NWListener) | EmbedIO library |
-| Input Simulation | CGEvent API | Windows Input API |
-| Permissions | Accessibility | Run as Administrator |
+| Network Stack | NWListener (Network.framework) | TcpListener (.NET) |
+| mDNS/Bonjour | Built-in (Network.framework) | Makaretu.Dns.Multicast |
+| Input Simulation | CGEvent API | InputSimulatorCore + Win32 API |
+| UI Framework | SwiftUI | WPF (XAML) |
+| Permissions | Accessibility | Firewall + Administrator |
+
+Both implementations use:
+- Raw TCP connections with manual HTTP parsing
+- Same endpoint structure (`/keyboard/text`, `/mouse/move`, etc.)
+- Same JSON payload format
+- Persistent connections for low latency
 
 ## Testing
 
@@ -94,8 +120,40 @@ iPhone (Controller) → WiFi Network → Windows PC (Receiver)
 - Package with installer (e.g., Inno Setup, WiX)
 - Or distribute via Microsoft Store
 
-## Notes
+## Important Notes
 
-- Windows app needs to run with **elevated privileges** for input simulation to work globally
-- Firewall may prompt to allow network access - allow it
-- Antivirus might flag input simulation - add exception if needed
+### Firewall Access
+- Windows will prompt for firewall access on first run - **you must allow it**
+- The app needs incoming connections on port 8080 (auto-assigned)
+- If blocked, the iPhone won't be able to send commands
+
+### Administrator Privileges
+- Not required for basic functionality
+- Recommended for unrestricted input simulation
+- Right-click → "Run as Administrator" if needed
+
+### Network Requirements
+- Both iPhone and Windows PC must be on the **same WiFi network**
+- Won't work across different networks or subnets
+- Corporate networks with AP isolation may block device-to-device communication
+
+### Antivirus
+- Some antivirus software may flag input simulation
+- Add AirControlla.exe to your antivirus exceptions if needed
+- This is a false positive - the app only simulates input when you send commands from your iPhone
+
+## Troubleshooting
+
+**iPhone can't discover Windows PC:**
+- Ensure both devices are on the same WiFi network
+- Check Windows Firewall allows the app
+- Try temporarily disabling antivirus
+
+**Connection shows but commands don't work:**
+- Run the app as Administrator
+- Check Windows Firewall settings
+- Restart both the app and iPhone
+
+**Mouse/keyboard not responding:**
+- Run as Administrator for full input simulation access
+- Check that the Windows app window shows "Controller Connected"

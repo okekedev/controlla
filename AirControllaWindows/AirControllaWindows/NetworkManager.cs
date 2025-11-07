@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using EmbedIO;
-using EmbedIO.Actions;
-using EmbedIO.WebApi;
-using Zeroconf;
 using Newtonsoft.Json.Linq;
+using Makaretu.Dns;
 
 namespace AirControllaWindows
 {
@@ -15,10 +17,16 @@ namespace AirControllaWindows
     /// </summary>
     public class NetworkManager
     {
-        private WebServer? _webServer;
-        private IDisposable? _mdnsService;
-        private const int Port = 8080;
-        private const string ServiceType = "_controlla._tcp.local.";
+        private TcpListener? _tcpListener;
+        private CancellationTokenSource? _listenerCancellation;
+        private Dictionary<int, TcpClient> _connections = new Dictionary<int, TcpClient>();
+        private int _nextConnectionId = 0;
+        private ServiceDiscovery? _mdnsService;
+        private ServiceProfile? _serviceProfile;
+        private int _port = 0; // 0 = auto-assign by OS
+        private const string ServiceType = "_controlla._tcp";
+
+        public int Port => _port;
 
         public bool IsReceiving { get; private set; }
         public string ReceiverStatus { get; private set; } = "Not Started";
@@ -53,8 +61,8 @@ namespace AirControllaWindows
             {
                 UpdateStatus("Starting receiver...");
 
-                // Start HTTP server
-                await StartHttpServer();
+                // Start TCP listener
+                await StartTcpListener();
 
                 // Advertise service via Bonjour/mDNS
                 await AdvertiseService();
@@ -78,16 +86,25 @@ namespace AirControllaWindows
 
             try
             {
-                // Stop HTTP server
-                if (_webServer != null)
+                // Stop TCP listener
+                _listenerCancellation?.Cancel();
+                _tcpListener?.Stop();
+                _tcpListener = null;
+
+                foreach (var client in _connections.Values)
                 {
-                    await _webServer.DisposeAsync();
-                    _webServer = null;
+                    client?.Close();
                 }
+                _connections.Clear();
 
                 // Stop mDNS advertising
+                if (_serviceProfile != null && _mdnsService != null)
+                {
+                    _mdnsService.Unadvertise(_serviceProfile);
+                }
                 _mdnsService?.Dispose();
                 _mdnsService = null;
+                _serviceProfile = null;
 
                 IsReceiving = false;
                 IsControllerConnected = false;
@@ -100,134 +117,232 @@ namespace AirControllaWindows
         }
 
         /// <summary>
-        /// Start HTTP server to receive commands from iPhone
+        /// Start TCP listener to receive commands from iPhone
         /// Mirrors the Swift NWListener implementation
         /// </summary>
-        private async Task StartHttpServer()
+        private async Task StartTcpListener()
         {
-            string url = $"http://*:{Port}/";
+            // Find available port starting from 8080
+            _port = FindAvailablePort(8080);
 
-            _webServer = new WebServer(o => o
-                    .WithUrlPrefix(url)
-                    .WithMode(HttpListenerMode.EmbedIO))
-                .WithLocalSessionManager()
-                .WithModule(new ActionModule("/", HttpVerbs.Post, HandleCommand))
-                .WithModule(new ActionModule("/ping", HttpVerbs.Get, ctx => ctx.SendStringAsync("pong", "text/plain", System.Text.Encoding.UTF8)));
+            _tcpListener = new TcpListener(IPAddress.Any, _port);
+            _tcpListener.Start();
+            _listenerCancellation = new CancellationTokenSource();
 
-            await _webServer.StartAsync();
-            Console.WriteLine($"✅ HTTP server started on {url}");
+            Console.WriteLine($"✅ TCP server started on port {_port}");
+            UpdateStatus($"Ready - {Dns.GetHostName()}");
+
+            // Start accepting connections in background
+            _ = Task.Run(() => AcceptClientsAsync(_listenerCancellation.Token));
         }
 
-        /// <summary>
-        /// Handle incoming commands from iPhone
-        /// Matches the Swift handleCommand implementation
-        /// </summary>
-        private async Task HandleCommand(IHttpContext context)
+        private int FindAvailablePort(int startPort)
+        {
+            for (int port = startPort; port < startPort + 100; port++)
+            {
+                try
+                {
+                    var listener = new TcpListener(IPAddress.Any, port);
+                    listener.Start();
+                    listener.Stop();
+                    return port;
+                }
+                catch
+                {
+                    continue;
+                }
+            }
+            return startPort;
+        }
+
+        private async Task AcceptClientsAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    var client = await _tcpListener!.AcceptTcpClientAsync();
+                    var connectionId = _nextConnectionId++;
+                    _connections[connectionId] = client;
+
+                    Console.WriteLine($"✅ Client connected: {connectionId}");
+
+                    // Handle this connection in background
+                    _ = Task.Run(() => HandleClientAsync(client, connectionId, cancellationToken));
+                }
+                catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error accepting client: {ex.Message}");
+                }
+            }
+        }
+
+        private async Task HandleClientAsync(TcpClient client, int connectionId, CancellationToken cancellationToken)
         {
             try
             {
-                var body = await context.GetRequestBodyAsStringAsync();
-                var json = JObject.Parse(body);
-                var action = json["action"]?.ToString();
+                var stream = client.GetStream();
+                var buffer = new byte[65536];
 
-                Console.WriteLine($"📨 Received command: {action}");
-
-                // Mark controller as connected when we receive first command
                 if (!IsControllerConnected)
                 {
                     IsControllerConnected = true;
                     UpdateStatus("Controller connected");
                 }
 
-                // Route to appropriate handler
-                switch (action)
+                while (!cancellationToken.IsCancellationRequested && client.Connected)
                 {
-                    case "move":
-                        HandleMouseMove(json);
-                        break;
-                    case "click":
-                        HandleMouseClick(json);
-                        break;
-                    case "type":
-                        HandleType(json);
-                        break;
-                    case "key":
-                        HandleKeyPress(json);
-                        break;
-                    case "voice":
-                        HandleVoiceInput(json);
-                        break;
-                    default:
-                        Console.WriteLine($"⚠️ Unknown action: {action}");
-                        break;
-                }
+                    var bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+                    if (bytesRead == 0) break;
 
-                await context.SendStringAsync("OK", "text/plain", System.Text.Encoding.UTF8);
+                    var request = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Console.WriteLine($"📥 Received: {request.Substring(0, Math.Min(100, request.Length))}...");
+
+                    // Process the HTTP request
+                    ProcessHttpRequest(request, stream);
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ Error handling command: {ex}");
-                context.Response.StatusCode = 500;
-                await context.SendStringAsync($"Error: {ex.Message}", "text/plain", System.Text.Encoding.UTF8);
+                Console.WriteLine($"❌ Connection error: {ex.Message}");
+            }
+            finally
+            {
+                _connections.Remove(connectionId);
+                client.Close();
+
+                if (_connections.Count == 0)
+                {
+                    IsControllerConnected = false;
+                    UpdateStatus("Waiting for connection");
+                }
             }
         }
 
-        // MARK: - Command Handlers
+        private void ProcessHttpRequest(string request, NetworkStream stream)
+        {
+            try
+            {
+                // Extract JSON from POST body
+                var headerEndIndex = request.IndexOf("\r\n\r\n");
+                if (headerEndIndex == -1) return;
+
+                var jsonBody = request.Substring(headerEndIndex + 4);
+                if (string.IsNullOrWhiteSpace(jsonBody)) return;
+
+                var json = JObject.Parse(jsonBody);
+
+                // Determine endpoint from request line
+                if (request.Contains("POST /keyboard/text"))
+                {
+                    HandleKeyboardText(json);
+                }
+                else if (request.Contains("POST /keyboard/key"))
+                {
+                    HandleKeyboardKey(json);
+                }
+                else if (request.Contains("POST /mouse/move"))
+                {
+                    HandleMouseMove(json);
+                }
+                else if (request.Contains("POST /mouse/click"))
+                {
+                    HandleMouseClick(json);
+                }
+
+                // Send HTTP response
+                var response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"success\":true}";
+                var responseBytes = Encoding.UTF8.GetBytes(response);
+                stream.Write(responseBytes, 0, responseBytes.Length);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error processing request: {ex.Message}");
+            }
+        }
+
+        private void HandleKeyboardText(JObject json)
+        {
+            string text = json["text"]?.ToString() ?? "";
+            Console.WriteLine($"📨 Keyboard text: {text.Substring(0, Math.Min(text.Length, 50))}...");
+            InputSimulator.TypeText(text);
+        }
+
+        private void HandleKeyboardKey(JObject json)
+        {
+            byte keycode = json["keycode"]?.Value<byte>() ?? 0;
+            byte modifier = json["modifier"]?.Value<byte>() ?? 0;
+            Console.WriteLine($"📨 Key press: keycode={keycode}, modifier={modifier}");
+            InputSimulator.SendKeyPress(keycode, modifier);
+        }
 
         private void HandleMouseMove(JObject json)
         {
-            int deltaX = json["x"]?.Value<int>() ?? 0;
-            int deltaY = json["y"]?.Value<int>() ?? 0;
+            int deltaX = json["deltaX"]?.Value<int>() ?? 0;
+            int deltaY = json["deltaY"]?.Value<int>() ?? 0;
             InputSimulator.MoveMouse(deltaX, deltaY);
         }
 
         private void HandleMouseClick(JObject json)
         {
             string button = json["button"]?.ToString() ?? "left";
+            Console.WriteLine($"📨 Mouse click: {button}");
             InputSimulator.ClickMouse(button);
-        }
-
-        private void HandleType(JObject json)
-        {
-            string text = json["text"]?.ToString() ?? "";
-            InputSimulator.TypeText(text);
-        }
-
-        private void HandleKeyPress(JObject json)
-        {
-            byte keycode = json["keycode"]?.Value<byte>() ?? 0;
-            byte modifier = json["modifier"]?.Value<byte>() ?? 0;
-            InputSimulator.SendKeyPress(keycode, modifier);
-        }
-
-        private void HandleVoiceInput(JObject json)
-        {
-            string text = json["text"]?.ToString() ?? "";
-            InputSimulator.TypeText(text);
         }
 
         /// <summary>
         /// Advertise service via Bonjour/mDNS so iPhone can discover this PC
         /// Mirrors the Swift NWListener.advertise() implementation
         /// </summary>
-        private async Task AdvertiseService()
+        private Task AdvertiseService()
         {
             try
             {
                 string hostname = Dns.GetHostName();
-                string serviceName = $"AirControlla-{hostname}";
+                string serviceName = hostname;
 
-                // Advertise using Zeroconf
-                _mdnsService = await ZeroconfResolver.BrowseDomainsAsync(ServiceType);
+                // Create mDNS service discovery
+                _mdnsService = new ServiceDiscovery();
 
-                Console.WriteLine($"✅ Advertising as: {serviceName}");
+                // Create service profile with full details
+                _serviceProfile = new ServiceProfile(serviceName, ServiceType, (ushort)_port);
+
+                // Add resources to help with discovery
+                var addresses = System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(ni => ni.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up)
+                    .SelectMany(ni => ni.GetIPProperties().UnicastAddresses)
+                    .Where(addr => addr.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
+                                && !System.Net.IPAddress.IsLoopback(addr.Address))
+                    .Select(addr => addr.Address)
+                    .ToList();
+
+                foreach (var addr in addresses)
+                {
+                    _serviceProfile.Resources.Add(new Makaretu.Dns.ARecord
+                    {
+                        Name = _serviceProfile.HostName,
+                        Address = addr
+                    });
+                    Console.WriteLine($"   IP: {addr}");
+                }
+
+                // Advertise the service
+                _mdnsService.Advertise(_serviceProfile);
+
+                Console.WriteLine($"✅ Advertising via mDNS as: {serviceName}");
                 Console.WriteLine($"   Service type: {ServiceType}");
-                Console.WriteLine($"   Port: {Port}");
+                Console.WriteLine($"   Port: {_port}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ Failed to advertise service: {ex}");
             }
+
+            return Task.CompletedTask;
         }
 
         private void UpdateStatus(string status)

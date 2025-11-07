@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
@@ -26,19 +27,7 @@ namespace AirControllaWindows
             }
 
             // Start receiver automatically
-            StartReceiver();
-        }
-
-        private async void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_networkManager.IsReceiving)
-            {
-                await StopReceiver();
-            }
-            else
-            {
-                await StartReceiver();
-            }
+            _ = StartReceiver();
         }
 
         private async Task StartReceiver()
@@ -71,7 +60,6 @@ namespace AirControllaWindows
         {
             Dispatcher.Invoke(() =>
             {
-                StatusText.Text = status;
                 UpdateUI();
             });
         }
@@ -80,24 +68,21 @@ namespace AirControllaWindows
         {
             if (_networkManager.IsReceiving)
             {
-                ToggleButton.Content = "Stop Receiver";
-
                 if (_networkManager.IsControllerConnected)
                 {
                     StatusIndicator.Fill = new SolidColorBrush(Colors.LimeGreen);
-                    ConnectionText.Text = "✓ Controller connected";
+                    ConnectionText.Text = "Controller Connected";
                 }
                 else
                 {
-                    StatusIndicator.Fill = new SolidColorBrush(Colors.Orange);
-                    ConnectionText.Text = "Waiting for controller...";
+                    StatusIndicator.Fill = new SolidColorBrush(Colors.White);
+                    ConnectionText.Text = "Waiting for Connection";
                 }
             }
             else
             {
-                ToggleButton.Content = "Start Receiver";
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Gray);
-                ConnectionText.Text = "No controller connected";
+                ConnectionText.Text = "Not Started";
             }
         }
 
