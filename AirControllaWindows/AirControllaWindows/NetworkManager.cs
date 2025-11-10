@@ -31,24 +31,8 @@ namespace AirControllaWindows
         public bool IsReceiving { get; private set; }
         public string ReceiverStatus { get; private set; } = "Not Started";
         public bool IsControllerConnected { get; private set; }
-        public bool NeedsAdministratorPrivileges { get; private set; }
 
         public event EventHandler<string>? StatusChanged;
-
-        public NetworkManager()
-        {
-            CheckAdministratorPrivileges();
-        }
-
-        /// <summary>
-        /// Check if app is running with administrator privileges (needed for input simulation)
-        /// </summary>
-        private void CheckAdministratorPrivileges()
-        {
-            var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
-            var principal = new System.Security.Principal.WindowsPrincipal(identity);
-            NeedsAdministratorPrivileges = !principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator);
-        }
 
         /// <summary>
         /// Start the receiver: HTTP server + Bonjour advertising

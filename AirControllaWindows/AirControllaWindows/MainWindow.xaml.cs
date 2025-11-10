@@ -20,12 +20,6 @@ namespace AirControllaWindows
             _networkManager = new NetworkManager();
             _networkManager.StatusChanged += OnStatusChanged;
 
-            // Check for admin privileges
-            if (_networkManager.NeedsAdministratorPrivileges)
-            {
-                AdminWarning.Visibility = Visibility.Visible;
-            }
-
             // Start receiver automatically
             _ = StartReceiver();
         }
@@ -84,6 +78,18 @@ namespace AirControllaWindows
                 StatusIndicator.Fill = new SolidColorBrush(Colors.Gray);
                 ConnectionText.Text = "Not Started";
             }
+        }
+
+        private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Stop the receiver
+            await StopReceiver();
+
+            // Wait a moment before restarting
+            await Task.Delay(500);
+
+            // Restart the receiver
+            await StartReceiver();
         }
 
         protected override async void OnClosed(EventArgs e)
