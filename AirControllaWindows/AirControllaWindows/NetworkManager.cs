@@ -1,16 +1,24 @@
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Makaretu.Dns;
+using Newtonsoft.Json.Linq;
 
 namespace AirControllaWindows
 {
+    public class FirewallException : Exception
+    {
+        public FirewallException(string message) : base(message) { }
+    }
+
+
     /// <summary>
     /// Handles network discovery (Bonjour/mDNS) and HTTP server for receiving commands from iPhone
     /// Mirrors the Swift NetworkManager from macOS version
@@ -46,10 +54,20 @@ namespace AirControllaWindows
                 UpdateStatus("Starting receiver...");
 
                 // Start TCP listener
-                await StartTcpListener();
+                bool tcpStarted = await StartTcpListener();
+                if (!tcpStarted)
+                {
+                    UpdateStatus("Failed to start TCP listener.");
+                    return;
+                }
 
                 // Advertise service via Bonjour/mDNS
-                await AdvertiseService();
+                bool mdnsStarted = await AdvertiseService();
+                if (!mdnsStarted)
+                {
+                    UpdateStatus("Failed to start mDNS advertising.");
+                    return;
+                }
 
                 IsReceiving = true;
                 UpdateStatus($"Listening on port {Port}");
@@ -104,20 +122,28 @@ namespace AirControllaWindows
         /// Start TCP listener to receive commands from iPhone
         /// Mirrors the Swift NWListener implementation
         /// </summary>
-        private async Task StartTcpListener()
+        private async Task<bool> StartTcpListener()
         {
-            // Find available port starting from 8080
-            _port = FindAvailablePort(8080);
+            try
+            {
+                // Find available port starting from 8080
+                _port = FindAvailablePort(8080);
 
-            _tcpListener = new TcpListener(IPAddress.Any, _port);
-            _tcpListener.Start();
-            _listenerCancellation = new CancellationTokenSource();
+                _tcpListener = new TcpListener(IPAddress.Any, _port);
+                _tcpListener.Start();
+                _listenerCancellation = new CancellationTokenSource();
 
-            Console.WriteLine($"✅ TCP server started on port {_port}");
-            UpdateStatus($"Ready - {Dns.GetHostName()}");
+                Console.WriteLine($"✅ TCP server started on port {_port}");
+                UpdateStatus($"Ready - {Dns.GetHostName()}");
 
-            // Start accepting connections in background
-            _ = Task.Run(() => AcceptClientsAsync(_listenerCancellation.Token));
+                // Start accepting connections in background
+                _ = Task.Run(() => AcceptClientsAsync(_listenerCancellation.Token));
+                return true;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AccessDenied)
+            {
+                return false;
+            }
         }
 
         private int FindAvailablePort(int startPort)
@@ -141,6 +167,8 @@ namespace AirControllaWindows
 
         private async Task AcceptClientsAsync(CancellationToken cancellationToken)
         {
+            if (_tcpListener == null) return;
+
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -243,9 +271,9 @@ namespace AirControllaWindows
                 var responseBytes = Encoding.UTF8.GetBytes(response);
                 stream.Write(responseBytes, 0, responseBytes.Length);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"❌ Error processing request: {ex.Message}");
+                Console.WriteLine($"❌ Error processing request");
             }
         }
 
@@ -282,7 +310,7 @@ namespace AirControllaWindows
         /// Advertise service via Bonjour/mDNS so iPhone can discover this PC
         /// Mirrors the Swift NWListener.advertise() implementation
         /// </summary>
-        private Task AdvertiseService()
+        private async Task<bool> AdvertiseService()
         {
             try
             {
@@ -320,13 +348,18 @@ namespace AirControllaWindows
                 Console.WriteLine($"✅ Advertising via mDNS as: {serviceName}");
                 Console.WriteLine($"   Service type: {ServiceType}");
                 Console.WriteLine($"   Port: {_port}");
+                return true;
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.AccessDenied)
+            {
+                return false;
             }
             catch (Exception ex)
             {
+                UpdateStatus($"Error: mDNS advertising failed");
                 Console.WriteLine($"❌ Failed to advertise service: {ex}");
+                return false;
             }
-
-            return Task.CompletedTask;
         }
 
         private void UpdateStatus(string status)

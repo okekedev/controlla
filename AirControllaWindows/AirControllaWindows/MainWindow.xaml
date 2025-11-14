@@ -85,7 +85,7 @@
             <!-- Connection Status -->
             <StackPanel x:Name="StatusPanel" Orientation="Horizontal"
                        HorizontalAlignment="Center"
-                       Margin="0,0,0,20">
+                       Margin="0,0,0,30">
                 <Ellipse x:Name="StatusIndicator"
                          Width="14"
                          Height="14"
@@ -99,6 +99,41 @@
                            FontWeight="SemiBold"
                            Foreground="White"
                            VerticalAlignment="Center"/>
+
+            </StackPanel>
+
+            <!-- Network Access Status -->
+            <StackPanel x:Name="NetworkAccessPanel" Orientation="Horizontal"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,20">
+                <TextBlock Text="Network Access"
+                           FontSize="14"
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+
+                <!-- Toggle Button -->
+                <Border x:Name="ToggleBorder"
+                        Width="50"
+                        Height="26"
+                        Background="#80FF0000"
+                        CornerRadius="13"
+                        Cursor="Hand"
+                        MouseLeftButtonDown="NetworkToggle_Click">
+                    <Ellipse x:Name="ToggleCircle"
+                             Width="20"
+                             Height="20"
+                             Fill="White"
+                             HorizontalAlignment="Left"
+                             Margin="3,0,0,0"/>
+                </Border>
+
+                <TextBlock x:Name="NetworkStatusText"
+                           Text="Denied"
+                           FontSize="14"
+                           Foreground="White"
+                           VerticalAlignment="Center"
+                           Margin="10,0,0,0"/>
 
             </StackPanel>
 

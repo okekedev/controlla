@@ -6,7 +6,7 @@
 
   <Identity Name="Sundai.AirControllaforPC"
             Publisher="CN=256DAFBA-A3E2-44D8-84BF-37A090C70A21"
-            Version="1.0.0.0" />
+            Version="1.0.1.0" />
 
   <Properties>
     <DisplayName>AirControlla for PC</DisplayName>
@@ -25,7 +25,7 @@
   <Applications>
     <Application Id="AirControlla" Executable="AirControlla.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements DisplayName="AirControlla"
-                          Description="Control your Windows PC from your iPhone or iPad"
+                          Description="Control your Windows PC from your iPhone. This app is the Windows receiver for the AirControlla iOS app."
                           BackgroundColor="transparent"
                           Square150x150Logo="Assets\Square150x150Logo.png"
                           Square44x44Logo="Assets\Square44x44Logo.png">

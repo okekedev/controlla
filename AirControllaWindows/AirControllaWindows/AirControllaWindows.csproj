@@ -10,7 +10,7 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <AssemblyName>AirControlla</AssemblyName>
     <Product>AirControlla for Windows</Product>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Christian Okeke</Authors>
     <Company>Christian Okeke</Company>
     <Description>Control your Windows PC from your iPhone</Description>
