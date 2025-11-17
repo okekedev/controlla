@@ -197,6 +197,14 @@ namespace AirControllaWindows
         {
             try
             {
+                // CRITICAL: Disable Nagle's algorithm to eliminate buffering delay
+                // This is the main cause of initial lag - Nagle buffers small packets for up to 200ms
+                client.NoDelay = true;
+
+                // Optimize socket buffer sizes for low-latency input
+                client.SendBufferSize = 8192;
+                client.ReceiveBufferSize = 8192;
+
                 var stream = client.GetStream();
                 var buffer = new byte[65536];
 
@@ -215,7 +223,7 @@ namespace AirControllaWindows
                     Console.WriteLine($"📥 Received: {request.Substring(0, Math.Min(100, request.Length))}...");
 
                     // Process the HTTP request
-                    ProcessHttpRequest(request, stream);
+                    await ProcessHttpRequestAsync(request, stream);
                 }
             }
             catch (Exception ex)
@@ -235,7 +243,7 @@ namespace AirControllaWindows
             }
         }
 
-        private void ProcessHttpRequest(string request, NetworkStream stream)
+        private async Task ProcessHttpRequestAsync(string request, NetworkStream stream)
         {
             try
             {
@@ -266,10 +274,10 @@ namespace AirControllaWindows
                     HandleMouseClick(json);
                 }
 
-                // Send HTTP response
+                // Send HTTP response asynchronously to avoid blocking
                 var response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"success\":true}";
                 var responseBytes = Encoding.UTF8.GetBytes(response);
-                stream.Write(responseBytes, 0, responseBytes.Length);
+                await stream.WriteAsync(responseBytes, 0, responseBytes.Length);
             }
             catch (Exception)
             {
@@ -281,7 +289,8 @@ namespace AirControllaWindows
         {
             string text = json["text"]?.ToString() ?? "";
             Console.WriteLine($"📨 Keyboard text: {text.Substring(0, Math.Min(text.Length, 50))}...");
-            InputSimulator.TypeText(text);
+            // Offload to ThreadPool to avoid blocking network thread
+            Task.Run(() => InputSimulator.TypeText(text));
         }
 
         private void HandleKeyboardKey(JObject json)
@@ -289,21 +298,24 @@ namespace AirControllaWindows
             byte keycode = json["keycode"]?.Value<byte>() ?? 0;
             byte modifier = json["modifier"]?.Value<byte>() ?? 0;
             Console.WriteLine($"📨 Key press: keycode={keycode}, modifier={modifier}");
-            InputSimulator.SendKeyPress(keycode, modifier);
+            // Offload to ThreadPool to avoid blocking network thread
+            Task.Run(() => InputSimulator.SendKeyPress(keycode, modifier));
         }
 
         private void HandleMouseMove(JObject json)
         {
             int deltaX = json["deltaX"]?.Value<int>() ?? 0;
             int deltaY = json["deltaY"]?.Value<int>() ?? 0;
-            InputSimulator.MoveMouse(deltaX, deltaY);
+            // Offload to ThreadPool to avoid blocking network thread
+            Task.Run(() => InputSimulator.MoveMouse(deltaX, deltaY));
         }
 
         private void HandleMouseClick(JObject json)
         {
             string button = json["button"]?.ToString() ?? "left";
             Console.WriteLine($"📨 Mouse click: {button}");
-            InputSimulator.ClickMouse(button);
+            // Offload to ThreadPool to avoid blocking network thread
+            Task.Run(() => InputSimulator.ClickMouse(button));
         }
 
         /// <summary>
